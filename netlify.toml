@@ -1,0 +1,34 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "backend/functions"
+
+# Handle SPA routes for client-side routing
+[[redirects]]
+  from = "/operationsbyivox/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/operationsbyshubhu/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/operations/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Security Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
