@@ -1,0 +1,10 @@
+# IvoxStack Robots.txt
+User-agent: *
+Disallow: /operationsbyivox/
+Disallow: /operationsbyivox/*
+Disallow: /operationsbyshubhu/
+Disallow: /operationsbyshubhu/*
+Disallow: /operations/
+Disallow: /operations/*
+
+Sitemap: https://ivoxstack.com/sitemap.xml
