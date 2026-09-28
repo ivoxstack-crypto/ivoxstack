@@ -3,14 +3,12 @@ import React from 'react';
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   layout?: 'horizontal' | 'vertical';
-  showTagline?: boolean;
   className?: string;
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   size = 'md',
   layout = 'horizontal',
-  showTagline = true,
   className = '',
 }) => {
   const taglineGray = 'text-slate-500';
@@ -89,17 +87,15 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
         </div>
 
         {/* Bottom Tagline: GROW BRANDS DIGITALLY (Single space between words, calibrated alignment) */}
-        {showTagline && (
-          <div
-            className={`uppercase font-bold whitespace-nowrap select-none font-sans flex items-center ${sizeStyles.tagline}`}
-          >
-            <span className="text-[#F97316]">G</span>
-            <span className={taglineGray}>ROW&nbsp;</span>
-            <span className={taglineGray}>BRANDS&nbsp;</span>
-            <span className="text-[#0284C7]">D</span>
-            <span className={taglineGray}>IGITALLY</span>
-          </div>
-        )}
+        <div
+          className={`uppercase font-bold whitespace-nowrap select-none font-sans flex items-center ${sizeStyles.tagline}`}
+        >
+          <span className="text-[#F97316]">G</span>
+          <span className={taglineGray}>ROW&nbsp;</span>
+          <span className={taglineGray}>BRANDS&nbsp;</span>
+          <span className="text-[#0284C7]">D</span>
+          <span className={taglineGray}>IGITALLY</span>
+        </div>
       </div>
     </div>
   );

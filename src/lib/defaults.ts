@@ -4,8 +4,6 @@ import type { SiteSettings, ServiceItem, PortfolioItem } from '../types';
 // once Supabase responds, the live values from the database replace them.
 
 export const DEFAULT_SETTINGS: SiteSettings = {
-  site_name: 'IvoxStack',
-  tagline: 'Digital Solutions Built for Business Growth',
   phone: '+91 82522 57405',
   whatsapp: '918252257405',
   email: 'digimarketive@gmail.com',

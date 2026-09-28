@@ -103,8 +103,6 @@ export interface PortfolioItem {
 }
 
 export interface SiteSettings {
-  site_name: string;
-  tagline: string;
   phone: string;
   whatsapp: string;
   email: string;

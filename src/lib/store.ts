@@ -29,10 +29,33 @@ const BACKEND_UNAVAILABLE = 'Our inquiry system is temporarily unavailable. Plea
  * to Supabase first; the in-memory cache only changes once the database accepted it.
  * Components subscribe via `useStoreVersion()` and re-render when anything changes.
  */
+const PUBLIC_CACHE_KEY = 'ivox_public_v1';
+
+// Keys written by the old browser-only version of the site (demo leads, clients, a copy
+// of the admin password, ...). They're never read any more, so wipe them on first load.
+const LEGACY_STORAGE_KEYS = [
+  'dm_settings', 'dm_services', 'dm_portfolio', 'dm_leads', 'dm_clients', 'dm_projects', 'dm_invoices',
+  'dm_notes', 'dm_activity', 'dm_audit', 'dm_price_rev', 'ivoxstack_admin_pass', 'ivoxstack_admin_email',
+];
+
+type PublicCache = { settings: SiteSettings; services: ServiceItem[]; portfolio: PortfolioItem[] };
+
+function readPublicCache(): PublicCache | null {
+  try {
+    const raw = localStorage.getItem(PUBLIC_CACHE_KEY);
+    return raw ? (JSON.parse(raw) as PublicCache) : null;
+  } catch {
+    return null;
+  }
+}
+
 class StoreService {
-  private settings: SiteSettings = DEFAULT_SETTINGS;
-  private services: ServiceItem[] = DEFAULT_SERVICES;
-  private portfolio: PortfolioItem[] = DEFAULT_PORTFOLIO;
+  private cache = readPublicCache();
+  private settings: SiteSettings = { ...DEFAULT_SETTINGS, ...this.cache?.settings };
+  private services: ServiceItem[] = this.cache?.services?.length ? this.cache.services : DEFAULT_SERVICES;
+  private portfolio: PortfolioItem[] = this.cache?.portfolio ?? DEFAULT_PORTFOLIO;
+  /** True once public content comes from the database (or a previous visit's cached copy). */
+  private publicReady = Boolean(this.cache) || !supabase;
 
   private leads: Lead[] = [];
   private notes: LeadNote[] = [];
@@ -65,7 +88,32 @@ class StoreService {
 
   // --- Bootstrapping ---
   async init() {
+    try {
+      LEGACY_STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // storage unavailable (private mode etc.) — nothing to clean
+    }
+    // Never keep first-time visitors waiting on a slow network
+    setTimeout(() => {
+      if (!this.publicReady) {
+        this.publicReady = true;
+        this.emit();
+      }
+    }, 2500);
     await Promise.all([this.loadPublicContent(), this.restoreSession()]);
+  }
+
+  isPublicReady(): boolean {
+    return this.publicReady;
+  }
+
+  private savePublicCache() {
+    try {
+      const cache: PublicCache = { settings: this.settings, services: this.getServices(), portfolio: this.getPortfolio() };
+      localStorage.setItem(PUBLIC_CACHE_KEY, JSON.stringify(cache));
+    } catch {
+      // storage full or unavailable — caching is only an optimisation
+    }
   }
 
   private async loadPublicContent() {
@@ -85,6 +133,8 @@ class StoreService {
     if (portfolioRes.error) console.error('Failed to load portfolio:', portfolioRes.error.message);
     else this.portfolio = portfolioRes.data as PortfolioItem[];
 
+    this.publicReady = true;
+    this.savePublicCache();
     this.emit();
   }
 
@@ -272,6 +322,7 @@ class StoreService {
     const res = await this.write(supabase.from('site_settings').upsert({ id: 1, data: newSettings }));
     if (!res.success) return res;
     this.settings = newSettings;
+    this.savePublicCache();
     this.logAudit('UPDATE_SETTINGS', 'SITE_SETTINGS', '', 'Website settings updated');
     this.emit();
     return res;
@@ -286,6 +337,7 @@ class StoreService {
       Object.assign(service, updates);
       this.logAudit('UPDATE_SERVICE', service.name, '', JSON.stringify(updates));
     }
+    this.savePublicCache();
     this.emit();
     return res;
   }
@@ -296,6 +348,7 @@ class StoreService {
     const res = await this.write(supabase.from('portfolio').insert(newItem));
     if (!res.success) return res;
     this.portfolio.push(newItem);
+    this.savePublicCache();
     this.logActivity('CREATE_PORTFOLIO', newItem.title, 'Added a portfolio item');
     this.emit();
     return res;
@@ -307,6 +360,7 @@ class StoreService {
     if (!res.success) return res;
     const item = this.portfolio.find((p) => p.id === id);
     this.portfolio = this.portfolio.filter((p) => p.id !== id);
+    this.savePublicCache();
     if (item) this.logActivity('DELETE_PORTFOLIO', item.title, 'Removed a portfolio item');
     this.emit();
     return res;
@@ -408,8 +462,54 @@ class StoreService {
     return res;
   }
 
+  async updateProjectStatus(id: string, status: Project['status']): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+    const res = await this.write(supabase.from('projects').update({ status }).eq('id', id));
+    if (!res.success) return res;
+    const project = this.projects.find((p) => p.id === id);
+    if (project) {
+      this.logAudit('PROJECT_STATUS', project.name, project.status, status);
+      project.status = status;
+    }
+    this.emit();
+    return res;
+  }
+
   getInvoices(): Invoice[] {
     return this.invoices;
+  }
+
+  async addInvoice(data: Pick<Invoice, 'client_id' | 'client_name' | 'amount' | 'tax_amount' | 'due_date' | 'notes'>): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+    const invoice: Invoice = {
+      ...data,
+      id: crypto.randomUUID(),
+      invoice_number: `INV-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`,
+      issue_date: new Date().toISOString().slice(0, 10),
+      status: 'Pending',
+      created_at: new Date().toISOString(),
+    };
+    const res = await this.write(supabase.from('invoices').insert(invoice));
+    if (!res.success) return res;
+    this.invoices.unshift(invoice);
+    this.logActivity('CREATE_INVOICE', invoice.invoice_number, `Invoice for ${invoice.client_name}`);
+    this.emit();
+    return res;
+  }
+
+  async updateInvoiceStatus(id: string, status: Invoice['status'], paymentMethod?: string): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+    const updates = { status, payment_method: paymentMethod ?? null };
+    const res = await this.write(supabase.from('invoices').update(updates).eq('id', id));
+    if (!res.success) return res;
+    const invoice = this.invoices.find((i) => i.id === id);
+    if (invoice) {
+      this.logAudit('INVOICE_STATUS', invoice.invoice_number, invoice.status, status);
+      invoice.status = status;
+      invoice.payment_method = paymentMethod;
+    }
+    this.emit();
+    return res;
   }
 
   // --- Activity & Audit Logs ---

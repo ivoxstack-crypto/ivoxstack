@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { store } from '../lib/store';
 import { useStoreVersion } from '../lib/useStore';
 import { formatINR } from '../lib/utils';
+import { Project } from '../types';
 
 export const Projects: React.FC = () => {
   useStoreVersion();
@@ -82,9 +83,19 @@ export const Projects: React.FC = () => {
             <div key={p.id} className={`p-6 rounded-3xl card-interactive space-y-4 flex flex-col justify-between ${currentTheme}`}>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${statusColors[p.status] || ''}`}>
-                    {p.status}
-                  </span>
+                  <select
+                    value={p.status}
+                    onChange={async (e) => {
+                      const res = await store.updateProjectStatus(p.id, e.target.value as Project['status']);
+                      if (!res.success) alert(`Could not update status: ${res.message}`);
+                    }}
+                    aria-label={`Status of ${p.name}`}
+                    className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border focus:outline-none ${statusColors[p.status] || ''}`}
+                  >
+                    {Object.keys(statusColors).map((st) => (
+                      <option key={st} value={st}>{st}</option>
+                    ))}
+                  </select>
                   <span className="text-xs font-black text-slate-900">{formatINR(p.budget)}</span>
                 </div>
                 <h3 className="text-base font-black text-slate-900">{p.name}</h3>

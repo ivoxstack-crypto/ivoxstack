@@ -9,7 +9,7 @@ export const Reports: React.FC = () => {
   const leads = store.getLeads();
   const invoices = store.getInvoices();
 
-  const totalWonRevenue = invoices.reduce((sum, i) => sum + i.amount, 0);
+  const totalWonRevenue = invoices.filter((i) => i.status === 'Paid').reduce((sum, i) => sum + i.amount, 0);
   const wonCount = leads.filter(l => l.status === 'WON').length;
   const avgDealSize = wonCount > 0 ? Math.round(totalWonRevenue / wonCount) : 0;
 
@@ -35,7 +35,7 @@ export const Reports: React.FC = () => {
         <div className="p-6 rounded-3xl card-theme-emerald card-interactive">
           <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Total Won Deal Revenue</span>
           <div className="text-3xl sm:text-4xl font-black text-emerald-700 mt-1">{formatINR(totalWonRevenue)}</div>
-          <span className="text-[11px] text-emerald-900/70 font-medium mt-1 block">From settled and active client accounts</span>
+          <span className="text-[11px] text-emerald-900/70 font-medium mt-1 block">From invoices marked as paid</span>
         </div>
 
         <div className="p-6 rounded-3xl card-theme-blue card-interactive">

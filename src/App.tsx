@@ -41,7 +41,7 @@ import { BackupSecurity } from './admin/BackupSecurity';
 import { store } from './lib/store';
 import { getUTMParams, loadTrackingScripts, trackPageView } from './lib/analytics';
 import { useStoreVersion } from './lib/useStore';
-import { Wrench } from 'lucide-react';
+import { Wrench, Loader2 } from 'lucide-react';
 import { buildWhatsAppUrl } from './lib/utils';
 import { WhatsAppIcon } from './components/WhatsAppIcon';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
@@ -61,6 +61,7 @@ export const App: React.FC = () => {
   const [leadDefaultService, setLeadDefaultService] = useState<string | undefined>();
   useStoreVersion();
   const settings = store.getSettings();
+  const isStaff = Boolean(store.getCurrentAdmin());
 
   useEffect(() => {
     getUTMParams();
@@ -103,7 +104,12 @@ export const App: React.FC = () => {
         <Route
           path="/*"
           element={
-            settings.maintenance_mode ? (
+            !store.isPublicReady() ? (
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="bg-aurora" aria-hidden="true" />
+                <Loader2 className="w-6 h-6 text-brand-500 animate-spin" aria-label="Loading" />
+              </div>
+            ) : settings.maintenance_mode && !isStaff ? (
               <div className="min-h-screen flex items-center justify-center p-6 text-center">
                 <div className="bg-aurora" aria-hidden="true" />
                 <div className="max-w-md p-10 rounded-[28px] glass-strong space-y-5">
@@ -126,6 +132,11 @@ export const App: React.FC = () => {
             ) : (
               <div className="min-h-screen flex flex-col text-slate-900 overflow-x-clip">
                 <div className="bg-aurora" aria-hidden="true" />
+                {settings.maintenance_mode && (
+                  <div className="relative z-50 bg-amber-100 border-b border-amber-300 text-amber-900 text-xs font-semibold text-center px-4 py-2">
+                    Maintenance mode is ON — visitors see the maintenance screen. You can see the site because you are signed in as staff.
+                  </div>
+                )}
                 <Header onOpenLeadModal={handleOpenLeadModal} />
                 
                 <main className="flex-1">

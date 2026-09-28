@@ -44,7 +44,6 @@ export default {
         'reverse-spin': 'reverse-spin 40s linear infinite',
         'fade-in': 'fade-in 0.25s ease-out both',
         'modal-in': 'modal-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both',
-        'float': 'float 7s ease-in-out infinite',
       },
       keyframes: {
         'reverse-spin': {
@@ -58,10 +57,6 @@ export default {
         'modal-in': {
           from: { opacity: '0', transform: 'translateY(12px) scale(0.98)' },
           to: { opacity: '1', transform: 'translateY(0) scale(1)' },
-        },
-        'float': {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-10px)' },
         },
       },
     },

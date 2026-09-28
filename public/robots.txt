@@ -2,4 +2,4 @@
 User-agent: *
 Disallow: /operationsbyivox
 
-Sitemap: https://ivoxstack.com/sitemap.xml
+Sitemap: https://ivoxstack.netlify.app/sitemap.xml
