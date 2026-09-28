@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        xs: '420px',
+      },
       colors: {
         brand: {
           50: '#f0f7ff',
@@ -34,22 +37,33 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-      },
-      borderRadius: {
-        '3xl': '13px',
-        '2xl': '12px',
-        'xl': '12px',
+        display: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
       },
       animation: {
-        'spin-slow': 'spin 35s linear infinite',
-        'reverse-spin': 'reverse-spin 35s linear infinite',
+        'spin-slow': 'spin 40s linear infinite',
+        'reverse-spin': 'reverse-spin 40s linear infinite',
+        'fade-in': 'fade-in 0.25s ease-out both',
+        'modal-in': 'modal-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both',
+        'float': 'float 7s ease-in-out infinite',
       },
       keyframes: {
         'reverse-spin': {
           from: { transform: 'rotate(0deg)' },
           to: { transform: 'rotate(-360deg)' },
-        }
-      }
+        },
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'modal-in': {
+          from: { opacity: '0', transform: 'translateY(12px) scale(0.98)' },
+          to: { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        'float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+      },
     },
   },
   plugins: [],

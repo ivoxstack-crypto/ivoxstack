@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Sliders, Check, Edit2, Sparkles } from 'lucide-react';
+import { Edit2 } from 'lucide-react';
 import { store } from '../lib/store';
+import { useStoreVersion } from '../lib/useStore';
 import { ServiceItem } from '../types';
 import { formatINR } from '../lib/utils';
 
 export const ServicesCMS: React.FC = () => {
-  const [services, setServices] = useState<ServiceItem[]>(store.getServices());
+  useStoreVersion();
+  const services = store.getAllServices();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editPrice, setEditPrice] = useState<number>(0);
   const [editDesc, setEditDesc] = useState<string>('');
@@ -16,18 +18,18 @@ export const ServicesCMS: React.FC = () => {
     setEditDesc(srv.short_description);
   };
 
-  const handleSave = (id: string) => {
-    store.updateService(id, {
+  const handleSave = async (id: string) => {
+    const res = await store.updateService(id, {
       starting_price: Number(editPrice),
       short_description: editDesc,
-    }, 'SUPER_ADMIN');
-    setServices([...store.getServices()]);
-    setEditingId(null);
+    });
+    if (res.success) setEditingId(null);
+    else alert(`Could not save: ${res.message}`);
   };
 
-  const handleToggleActive = (srv: ServiceItem) => {
-    store.updateService(srv.id, { is_active: !srv.is_active }, 'SUPER_ADMIN');
-    setServices([...store.getServices()]);
+  const handleToggleActive = async (srv: ServiceItem) => {
+    const res = await store.updateService(srv.id, { is_active: !srv.is_active });
+    if (!res.success) alert(`Could not update: ${res.message}`);
   };
 
   return (
@@ -48,7 +50,6 @@ export const ServicesCMS: React.FC = () => {
             'card-theme-purple',
             'card-theme-cyan',
             'card-theme-amber',
-            'card-theme-rose',
             'card-theme-indigo',
           ];
           const currentTheme = cmsThemes[idx % cmsThemes.length];

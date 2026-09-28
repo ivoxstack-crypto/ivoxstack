@@ -60,32 +60,6 @@ export interface Project {
   created_at: string;
 }
 
-export interface Order {
-  id: string;
-  client_id: string;
-  client_name: string;
-  package_name: string;
-  service: string;
-  amount: number;
-  billing_type: 'One-Time' | 'Monthly';
-  start_date: string;
-  renewal_date?: string;
-  status: 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
-  created_at: string;
-}
-
-export interface Payment {
-  id: string;
-  client_id: string;
-  client_name: string;
-  amount: number;
-  method: 'UPI' | 'NEFT' | 'Razorpay' | 'Cash' | 'Other';
-  status: 'COMPLETED' | 'PENDING' | 'FAILED';
-  transaction_ref?: string;
-  notes?: string;
-  payment_date: string;
-}
-
 export interface Invoice {
   id: string;
   invoice_number: string;
@@ -115,21 +89,6 @@ export interface ServiceItem {
   is_active: boolean;
 }
 
-export interface PricingPlan {
-  id: string;
-  category: string;
-  name: string;
-  description?: string;
-  price: number;
-  currency: string;
-  billing_type: 'one-time' | 'monthly';
-  features: string[];
-  is_active: boolean;
-  is_featured: boolean;
-  is_starting_price?: boolean;
-  display_order: number;
-}
-
 export interface PortfolioItem {
   id: string;
   title: string;
@@ -138,25 +97,9 @@ export interface PortfolioItem {
   description: string;
   image: string;
   project_url?: string;
-  pdf_url?: string;
   is_featured: boolean;
   is_published: boolean;
   display_order: number;
-}
-
-export interface CaseStudy {
-  id: string;
-  title: string;
-  client: string;
-  industry: string;
-  problem: string;
-  objective: string;
-  strategy: string;
-  execution: string;
-  results: string;
-  metrics: { label: string; value: string }[];
-  image?: string;
-  is_published: boolean;
 }
 
 export interface SiteSettings {
@@ -167,15 +110,8 @@ export interface SiteSettings {
   email: string;
   address: string;
   business_hours: string;
-  social_links: {
-    instagram?: string;
-    facebook?: string;
-    linkedin?: string;
-    youtube?: string;
-  };
   meta_pixel_id: string;
   ga4_id: string;
-  webhook_url: string;
   maintenance_mode: boolean;
   announcement_active: boolean;
   announcement_text: string;

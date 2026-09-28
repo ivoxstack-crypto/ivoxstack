@@ -1,9 +1,11 @@
 import React from 'react';
-import { BarChart3, TrendingUp, PieChart, Users, DollarSign, Award } from 'lucide-react';
+import { Award } from 'lucide-react';
 import { store } from '../lib/store';
+import { useStoreVersion } from '../lib/useStore';
 import { formatINR } from '../lib/utils';
 
 export const Reports: React.FC = () => {
+  useStoreVersion();
   const leads = store.getLeads();
   const invoices = store.getInvoices();
 
@@ -59,6 +61,7 @@ export const Reports: React.FC = () => {
         </div>
 
         <div className="space-y-4">
+          {sortedServices.length === 0 && <p className="text-xs text-slate-400">No inquiry data yet.</p>}
           {sortedServices.map(([srvName, count], idx) => {
             const percentage = Math.round((count / leads.length) * 100) || 0;
             return (

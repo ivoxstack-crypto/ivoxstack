@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Phone, Mail, MapPin, Clock, Send, ShieldCheck } from 'lucide-react';
+import { Phone, Mail, MapPin, ArrowRight, AlertCircle } from 'lucide-react';
 import { WhatsAppIcon } from '../components/WhatsAppIcon';
+import { SectionHeading } from '../components/SectionHeading';
+import { Reveal } from '../components/Reveal';
 import { store } from '../lib/store';
 import { buildWhatsAppUrl, sanitizeInput, validateEmail, validatePhone } from '../lib/utils';
 import { trackWhatsAppClick, trackCallClick, trackLeadSubmission } from '../lib/analytics';
@@ -42,7 +44,7 @@ export const ContactPage: React.FC = () => {
 
   const handleWhatsApp = () => {
     trackWhatsAppClick('contact_page');
-    window.open(buildWhatsAppUrl('Hello IvoxStack, I would like to schedule a direct consultation call.', settings.whatsapp), '_blank');
+    window.open(buildWhatsAppUrl('Hello IvoxStack, I would like to schedule a direct consultation call.', settings.whatsapp), '_blank', 'noopener,noreferrer');
   };
 
   const handlePhone = () => {
@@ -91,87 +93,87 @@ export const ContactPage: React.FC = () => {
     }
   };
 
+  const channels = [
+    {
+      icon: <Phone className="w-5 h-5 text-brand-600" />,
+      label: 'Call us',
+      value: settings.phone,
+      note: settings.business_hours,
+      onClick: handlePhone,
+    },
+    {
+      icon: <WhatsAppIcon className="w-5 h-5 fill-[#25D366]" />,
+      label: 'WhatsApp',
+      value: 'Chat with us directly',
+      note: 'Average response under 15 minutes',
+      onClick: handleWhatsApp,
+    },
+    {
+      icon: <Mail className="w-5 h-5 text-accent-500" />,
+      label: 'Email',
+      value: settings.email,
+      note: 'Inquiries, proposals & RFPs',
+      href: `mailto:${settings.email}`,
+    },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 space-y-12 bg-white">
-      
-      <div className="text-center max-w-3xl mx-auto">
-        <span className="text-xs font-bold uppercase tracking-wider text-brand-600">
-          Direct Connect
-        </span>
-        <h1 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tight mt-2">
-          Get in Touch With IvoxStack
-        </h1>
-        <p className="text-slate-600 text-sm sm:text-base mt-3 leading-relaxed">
-          Have an urgent requirement or want to discuss a customized digital roadmap? Reach out via phone, WhatsApp or submit an inquiry.
-        </p>
-      </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 sm:pt-20 pb-24 space-y-14">
+      <SectionHeading
+        asPageTitle
+        eyebrow="Get in Touch"
+        title="Let's talk about your growth"
+        description="Have an urgent requirement or want to discuss a custom digital roadmap? Reach out via phone, WhatsApp or send an inquiry."
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        
-        {/* Left Column: Direct Info Cards */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6">
-            <h3 className="text-xl font-bold text-slate-900">Direct Communication</h3>
-            
-            <div className="space-y-4 text-xs text-slate-700">
-              <div className="flex items-start gap-3 p-4 rounded-2xl card-theme-blue card-interactive">
-                <Phone className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-[11px] font-bold text-blue-800 uppercase block">Phone Support</span>
-                  <button onClick={handlePhone} className="text-sm font-semibold text-slate-900 hover:text-blue-600 transition-colors">
-                    {settings.phone}
-                  </button>
-                  <p className="text-[11px] text-slate-600 mt-0.5">Mon–Sat (9:30 AM – 7:30 PM)</p>
-                </div>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Channels */}
+        <Reveal className="lg:col-span-5 space-y-4">
+          {channels.map((c) => {
+            const body = (
+              <>
+                <span className="icon-chip shrink-0">{c.icon}</span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{c.label}</span>
+                  <span className="block text-base font-semibold text-slate-950 mt-1 truncate">{c.value}</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">{c.note}</span>
+                </span>
+                <ArrowRight className="w-4 h-4 text-slate-400 ml-auto shrink-0 group-hover:translate-x-1 group-hover:text-slate-900 transition-all" />
+              </>
+            );
+            const cls = 'group w-full flex items-center gap-4 p-5 rounded-3xl glass glass-hover text-left';
+            return c.href ? (
+              <a key={c.label} href={c.href} className={cls}>
+                {body}
+              </a>
+            ) : (
+              <button key={c.label} onClick={c.onClick} className={cls}>
+                {body}
+              </button>
+            );
+          })}
 
-              <div className="flex items-start gap-3 p-4 rounded-2xl card-theme-emerald card-interactive">
-                <WhatsAppIcon className="w-5 h-5 fill-[#25D366] shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-[11px] font-bold text-emerald-800 uppercase block">Instant WhatsApp</span>
-                  <button onClick={handleWhatsApp} className="text-sm font-semibold text-emerald-700 hover:underline">
-                    Chat on WhatsApp Directly
-                  </button>
-                  <p className="text-[11px] text-slate-600 mt-0.5">Average response under 15 minutes</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4 rounded-2xl card-theme-orange card-interactive">
-                <Mail className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-[11px] font-bold text-orange-800 uppercase block">Official Email</span>
-                  <a href={`mailto:${settings.email}`} className="text-sm font-semibold text-slate-900 hover:text-orange-600 transition-colors">
-                    {settings.email}
-                  </a>
-                  <p className="text-[11px] text-slate-600 mt-0.5">Inquiries, proposals & RFPs</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-4 rounded-2xl card-theme-purple card-interactive">
-                <MapPin className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-[11px] font-bold text-purple-800 uppercase block">Operating Locations</span>
-                  <span className="text-sm font-semibold text-slate-900">{settings.address}</span>
-                  <p className="text-[11px] text-slate-600 mt-0.5">Serving clients worldwide</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 flex items-center gap-2 text-xs text-emerald-700 font-medium">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Dedicated Enterprise Account Managers</span>
-            </div>
+          <div className="flex items-center gap-4 p-5 rounded-3xl glass">
+            <span className="icon-chip shrink-0">
+              <MapPin className="w-5 h-5 text-violet-600" />
+            </span>
+            <span>
+              <span className="block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Office</span>
+              <span className="block text-base font-semibold text-slate-950 mt-1">{settings.address}</span>
+              <span className="block text-xs text-slate-500 mt-0.5">Serving clients across India & worldwide</span>
+            </span>
           </div>
-        </div>
+        </Reveal>
 
-        {/* Right Column: Contact Inquiry Form */}
-        <div className="lg:col-span-7">
-          <div className="p-8 sm:p-10 rounded-3xl bg-white border border-slate-200 shadow-sm">
-            <h3 className="text-2xl font-bold text-slate-900 mb-1">Send An Inquiry</h3>
-            <p className="text-xs text-slate-500 mb-6">Fill in your information and our technical team will review and reply with a tailored roadmap.</p>
+        {/* Form */}
+        <Reveal delay={100} className="lg:col-span-7">
+          <div className="p-7 sm:p-10 rounded-[28px] glass-strong">
+            <h2 className="text-2xl font-bold text-slate-950">Send an inquiry</h2>
+            <p className="text-sm text-slate-600 mt-1.5 mb-7">Share a few details and our team will reply with a tailored roadmap.</p>
 
             {errorMsg && (
-              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
+              <div className="mb-5 p-3 rounded-xl bg-red-50/90 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 {errorMsg}
               </div>
             )}
@@ -179,48 +181,24 @@ export const ContactPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder={placeholderName}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none"
-                  />
+                  <label className="field-label" htmlFor="ct-name">Full Name *</label>
+                  <input id="ct-name" type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={placeholderName} className="field" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder={placeholderPhone}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none"
-                  />
+                  <label className="field-label" htmlFor="ct-phone">Phone Number *</label>
+                  <input id="ct-phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={placeholderPhone} className="field" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none"
-                  />
+                  <label className="field-label" htmlFor="ct-email">Email Address *</label>
+                  <input id="ct-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" className="field" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Solution Category</label>
-                  <select
-                    value={service}
-                    onChange={(e) => setService(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none"
-                  >
+                  <label className="field-label" htmlFor="ct-service">Solution Category</label>
+                  <select id="ct-service" value={service} onChange={(e) => setService(e.target.value)} className="field">
+                    <option value="General Consultation">General Consultation</option>
                     <option value="Website Design & Development">Website Design & Development</option>
                     <option value="Meta Ads Management">Meta Ads Management</option>
                     <option value="Lead Generation Funnels">Lead Generation Funnels</option>
@@ -233,28 +211,24 @@ export const ContactPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Message / Project Scope</label>
+                <label className="field-label" htmlFor="ct-message">Message / Project Scope</label>
                 <textarea
-                  rows={4}
+                  id="ct-message"
+                  rows={5}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Tell us about your business goals, target audience, or current bottlenecks..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none"
+                  placeholder="Tell us about your business goals, target audience or current bottlenecks..."
+                  className="field resize-none"
                 />
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 px-4 rounded-xl bg-[#f95700] hover:bg-[#e04e00] text-white font-bold text-xs shadow-md shadow-orange-500/25 transition-all active:scale-98 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <span>{loading ? 'Sending Inquiry...' : 'Submit Inquiry & Connect With Us'}</span>
-                <span>→</span>
+              <button type="submit" disabled={loading} className="btn btn-primary w-full !py-3.5">
+                <span>{loading ? 'Sending...' : 'Send Inquiry'}</span>
+                {!loading && <ArrowRight className="w-4 h-4" />}
               </button>
             </form>
           </div>
-        </div>
-
+        </Reveal>
       </div>
     </div>
   );

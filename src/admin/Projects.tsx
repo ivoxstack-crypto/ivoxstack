@@ -1,35 +1,42 @@
 import React, { useState } from 'react';
-import { Briefcase, Calendar, Plus, Clock, CheckCircle2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { store } from '../lib/store';
+import { useStoreVersion } from '../lib/useStore';
 import { formatINR } from '../lib/utils';
-import { Project } from '../types';
 
 export const Projects: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>(store.getProjects());
+  useStoreVersion();
+  const projects = store.getProjects();
   const clients = store.getClients();
+  const [saving, setSaving] = useState(false);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [name, setName] = useState('');
   const [clientId, setClientId] = useState(clients[0]?.id || '');
   const [service, setService] = useState('Website Design & Development');
   const [budget, setBudget] = useState(14999);
-  const [deadline, setDeadline] = useState('2026-10-15');
+  const [deadline, setDeadline] = useState('');
 
-  const handleAddProject = (e: React.FormEvent) => {
+  const handleAddProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    const client = clients.find(c => c.id === clientId);
-    const newProj = store.addProject({
-      client_id: clientId,
-      client_name: client?.name || 'Client',
+    const client = clients.find(c => c.id === (clientId || clients[0]?.id));
+    if (!client) return;
+    setSaving(true);
+    const res = await store.addProject({
+      client_id: client.id,
+      client_name: client.name,
       name,
       service,
       status: 'Active',
       start_date: new Date().toISOString().split('T')[0],
       deadline,
       budget: Number(budget),
-      team_member: 'Shubham Pandey',
     });
-    setProjects(store.getProjects());
+    setSaving(false);
+    if (!res.success) {
+      alert(`Could not create project: ${res.message}`);
+      return;
+    }
     setShowAddModal(false);
     setName('');
   };
@@ -52,7 +59,9 @@ export const Projects: React.FC = () => {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-md hover:scale-[1.02]"
+          disabled={clients.length === 0}
+          title={clients.length === 0 ? 'Convert a lead into a client first' : undefined}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all shadow-md hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none"
         >
           <Plus className="w-4 h-4" />
           <span>New Project</span>
@@ -60,6 +69,11 @@ export const Projects: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {projects.length === 0 && (
+          <div className="col-span-full p-10 rounded-3xl bg-white border border-dashed border-slate-300 text-center text-xs text-slate-400">
+            No projects yet. Create one for an existing client.
+          </div>
+        )}
         {projects.map((p, idx) => {
           const projectThemes = ['card-theme-blue', 'card-theme-orange', 'card-theme-indigo', 'card-theme-emerald'];
           const currentTheme = projectThemes[idx % projectThemes.length];
@@ -149,6 +163,7 @@ export const Projects: React.FC = () => {
                   <label className="block text-slate-700 font-bold mb-1">Deadline</label>
                   <input
                     type="date"
+                    required
                     value={deadline}
                     onChange={(e) => setDeadline(e.target.value)}
                     className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 focus:bg-white focus:outline-none focus:border-brand-500"
@@ -165,9 +180,10 @@ export const Projects: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold"
+                  disabled={saving}
+                  className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold disabled:opacity-50"
                 >
-                  Create Project
+                  {saving ? 'Creating...' : 'Create Project'}
                 </button>
               </div>
             </form>

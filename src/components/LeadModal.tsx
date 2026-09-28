@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Send, Sparkles, AlertCircle, ShieldCheck } from 'lucide-react';
+import { X, ArrowRight, AlertCircle, ShieldCheck } from 'lucide-react';
 import { store } from '../lib/store';
 import { getUTMParams, trackLeadSubmission } from '../lib/analytics';
 import { sanitizeInput, validateEmail, validatePhone } from '../lib/utils';
@@ -71,6 +71,18 @@ export const LeadModal: React.FC<LeadModalProps> = ({ isOpen, onClose, defaultSe
       setPlaceholderCompany(RANDOM_COMPANIES[Math.floor(Math.random() * RANDOM_COMPANIES.length)]);
     }
   }, [isOpen, defaultService]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -145,43 +157,41 @@ export const LeadModal: React.FC<LeadModalProps> = ({ isOpen, onClose, defaultSe
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-xl rounded-3xl bg-white border border-slate-200 shadow-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
-        
-        {/* Close Button */}
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-slate-900/30 backdrop-blur-md animate-fade-in"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="lead-modal-title"
+    >
+      <div className="relative w-full max-w-xl rounded-[28px] glass-strong p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-modal-in">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
-          aria-label="Close Modal"
+          className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-slate-900/5 text-slate-500 hover:text-slate-900 hover:bg-slate-900/10 transition-colors"
+          aria-label="Close"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center gap-2 mb-1">
-          <div className="p-1.5 rounded-lg bg-brand-50 text-brand-600 border border-brand-200">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <span className="text-xs font-bold uppercase tracking-wider text-brand-600">
-            Start Your Business Growth
-          </span>
-        </div>
-
-        <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-          Request Free Consultation & Strategy
+        <span className="eyebrow">
+          <span className="eyebrow-dot" />
+          Free Consultation
+        </span>
+        <h3 id="lead-modal-title" className="text-2xl sm:text-[28px] font-extrabold text-slate-950 tracking-tight mt-4">
+          Let's plan your growth
         </h3>
-        <p className="text-xs text-slate-500 mt-1">
-          Tell us about your business requirements. We'll analyze your digital footprint and propose an actionable roadmap.
+        <p className="text-sm text-slate-600 mt-1.5">
+          Tell us about your business. We'll review your digital footprint and propose an actionable roadmap.
         </p>
 
         {errorMsg && (
-          <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+          <div className="mt-5 p-3 rounded-xl bg-red-50/90 border border-red-200 text-red-700 text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          
           <div className="hidden" aria-hidden="true">
             <input
               type="text"
@@ -195,72 +205,32 @@ export const LeadModal: React.FC<LeadModalProps> = ({ isOpen, onClose, defaultSe
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Full Name <span className="text-accent-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder={placeholderName}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none transition-colors"
-              />
+              <label className="field-label" htmlFor="lm-name">Full Name <span className="text-accent-500">*</span></label>
+              <input id="lm-name" type="text" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={placeholderName} className="field" />
             </div>
-
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Business / Company Name
-              </label>
-              <input
-                type="text"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
-                placeholder={placeholderCompany}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none transition-colors"
-              />
+              <label className="field-label" htmlFor="lm-company">Business / Company</label>
+              <input id="lm-company" type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder={placeholderCompany} className="field" />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                WhatsApp / Phone <span className="text-accent-500">*</span>
-              </label>
-              <input
-                type="tel"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder={placeholderPhone}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none transition-colors"
-              />
+              <label className="field-label" htmlFor="lm-phone">WhatsApp / Phone <span className="text-accent-500">*</span></label>
+              <input id="lm-phone" type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={placeholderPhone} className="field" />
             </div>
-
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Email Address <span className="text-accent-500">*</span>
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="client@company.com"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none transition-colors"
-              />
+              <label className="field-label" htmlFor="lm-email">Email Address <span className="text-accent-500">*</span></label>
+              <input id="lm-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="client@company.com" className="field" />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Primary Service Interested In
-            </label>
-            <select
-              value={service}
-              onChange={(e) => setService(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none"
-            >
+            <label className="field-label" htmlFor="lm-service">Primary Service</label>
+            <select id="lm-service" value={service} onChange={(e) => setService(e.target.value)} className="field">
+              {defaultService && !services.some((s) => s.name === defaultService) && (
+                <option value={defaultService}>{defaultService}</option>
+              )}
               {services.map((s) => (
                 <option key={s.id} value={s.name}>
                   {s.name} (Starting ₹{s.starting_price.toLocaleString('en-IN')})
@@ -271,14 +241,8 @@ export const LeadModal: React.FC<LeadModalProps> = ({ isOpen, onClose, defaultSe
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Estimated Budget
-              </label>
-              <select
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none"
-              >
+              <label className="field-label" htmlFor="lm-budget">Estimated Budget</label>
+              <select id="lm-budget" value={budget} onChange={(e) => setBudget(e.target.value)} className="field">
                 <option value="Below ₹5,000">Below ₹5,000</option>
                 <option value="₹5,000–₹10,000">₹5,000–₹10,000</option>
                 <option value="₹10,000–₹25,000">₹10,000–₹25,000</option>
@@ -286,16 +250,9 @@ export const LeadModal: React.FC<LeadModalProps> = ({ isOpen, onClose, defaultSe
                 <option value="₹50,000+">₹50,000+</option>
               </select>
             </div>
-
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Expected Timeline
-              </label>
-              <select
-                value={timeline}
-                onChange={(e) => setTimeline(e.target.value)}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none"
-              >
+              <label className="field-label" htmlFor="lm-timeline">Expected Timeline</label>
+              <select id="lm-timeline" value={timeline} onChange={(e) => setTimeline(e.target.value)} className="field">
                 <option value="Immediately">Immediately</option>
                 <option value="Within 7 Days">Within 7 Days</option>
                 <option value="Within This Month">Within This Month</option>
@@ -305,37 +262,27 @@ export const LeadModal: React.FC<LeadModalProps> = ({ isOpen, onClose, defaultSe
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Project Details & Goals
-            </label>
+            <label className="field-label" htmlFor="lm-details">Project Details & Goals</label>
             <textarea
+              id="lm-details"
               rows={3}
               value={projectDetails}
               onChange={(e) => setProjectDetails(e.target.value)}
-              placeholder="Briefly describe your objectives, current website or ad performance challenges..."
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:border-brand-500 focus:bg-white focus:outline-none"
+              placeholder="Briefly describe your objectives or current challenges..."
+              className="field resize-none"
             />
           </div>
 
-          <div className="pt-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#f95700] hover:bg-[#e04e00] text-white font-bold text-xs shadow-md shadow-orange-500/25 active:scale-98 transition-all disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-                <span>{loading ? 'Submitting...' : 'Submit Inquiry & Get Free Roadmap'}</span>
-                <span>→</span>
-              </button>
-          </div>
+          <button type="submit" disabled={loading} className="btn btn-primary w-full !py-3.5">
+            <span>{loading ? 'Submitting...' : 'Get My Free Roadmap'}</span>
+            {!loading && <ArrowRight className="w-4 h-4" />}
+          </button>
 
-          <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 pt-1">
+          <p className="flex items-center justify-center gap-1.5 text-xs text-slate-500">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>100% Confidential. Zero spam. We respond within 4 business hours.</span>
-          </div>
-
+            100% confidential. No spam. We respond within 4 business hours.
+          </p>
         </form>
-
       </div>
     </div>
   );

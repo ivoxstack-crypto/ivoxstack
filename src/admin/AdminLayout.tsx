@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet, Navigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -8,29 +8,38 @@ import {
   Sliders, 
   DollarSign, 
   Image, 
+  Loader2, 
   BarChart3, 
   History, 
   Settings as SettingsIcon, 
   ShieldCheck, 
   LogOut, 
-  ExternalLink,
-  ChevronRight
+  ExternalLink
 } from 'lucide-react';
 import { store } from '../lib/store';
+import { useStoreVersion } from '../lib/useStore';
 
 export const AdminLayout: React.FC = () => {
+  useStoreVersion();
   const location = useLocation();
   const navigate = useNavigate();
   const currentAdmin = store.getCurrentAdmin();
 
-  // If not authenticated, redirect to login
-  if (!currentAdmin) {
-    navigate('/operationsbyivox/login', { replace: true });
-    return null;
+  // Wait for the saved Supabase session to be checked before deciding
+  if (!store.isAuthChecked()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <Loader2 className="w-6 h-6 text-brand-600 animate-spin" />
+      </div>
+    );
   }
 
-  const handleLogout = () => {
-    store.logoutAdmin();
+  if (!currentAdmin) {
+    return <Navigate to="/operationsbyivox/login" replace />;
+  }
+
+  const handleLogout = async () => {
+    await store.logoutAdmin();
     navigate('/operationsbyivox/login');
   };
 
@@ -41,7 +50,6 @@ export const AdminLayout: React.FC = () => {
     { name: 'Projects', path: '/operationsbyivox/projects', icon: <FileSpreadsheet className="w-4 h-4" /> },
     { name: 'Invoices & Payments', path: '/operationsbyivox/invoices', icon: <DollarSign className="w-4 h-4" /> },
     { name: 'Services CMS', path: '/operationsbyivox/services', icon: <Sliders className="w-4 h-4" /> },
-    { name: 'Pricing CMS', path: '/operationsbyivox/pricing', icon: <DollarSign className="w-4 h-4" /> },
     { name: 'Portfolio CMS', path: '/operationsbyivox/portfolio', icon: <Image className="w-4 h-4" /> },
     { name: 'Reports & Analytics', path: '/operationsbyivox/reports', icon: <BarChart3 className="w-4 h-4" /> },
     { name: 'Activity & Audit', path: '/operationsbyivox/activity', icon: <History className="w-4 h-4" /> },

@@ -2,60 +2,55 @@ import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
-  Phone, 
-  Mail, 
-  Clock, 
   UserCheck, 
-  Send, 
-  FileText, 
-  Globe, 
-  CheckCircle2 
+  Send
 } from 'lucide-react';
 import { WhatsAppIcon } from '../components/WhatsAppIcon';
 import { store } from '../lib/store';
+import { useStoreVersion } from '../lib/useStore';
 import { LeadStatus } from '../types';
 import { buildWhatsAppUrl } from '../lib/utils';
 
 export const LeadDetail: React.FC = () => {
+  useStoreVersion();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const lead = store.getLeadById(id || '');
-
   const [noteText, setNoteText] = useState('');
-  const [notes, setNotes] = useState(lead ? store.getNotesForLead(lead.id) : []);
-  const [currentStatus, setCurrentStatus] = useState<LeadStatus>(lead?.status || 'NEW');
+  const [saving, setSaving] = useState(false);
 
   if (!lead) {
     return (
       <div className="p-8 text-center space-y-4">
-        <h2 className="text-xl font-bold text-white">Lead Record Not Found</h2>
-        <Link to="/operationsbyivox/leads" className="text-xs text-brand-400 hover:underline">
+        <h2 className="text-xl font-bold text-slate-900">Lead record not found</h2>
+        <Link to="/operationsbyivox/leads" className="text-xs text-brand-600 hover:underline">
           Back to Leads Pipeline
         </Link>
       </div>
     );
   }
 
-  const handleStatusChange = (newStatus: LeadStatus) => {
-    setCurrentStatus(newStatus);
-    store.updateLeadStatus(lead.id, newStatus, 'ADMIN');
+  const notes = store.getNotesForLead(lead.id);
+
+  const handleStatusChange = async (newStatus: LeadStatus) => {
+    const res = await store.updateLeadStatus(lead.id, newStatus);
+    if (!res.success) alert(`Could not update status: ${res.message}`);
   };
 
-  const handleAddNote = (e: React.FormEvent) => {
+  const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!noteText.trim()) return;
-
-    store.addLeadNote(lead.id, noteText.trim(), 'Sales Agent');
-    setNotes(store.getNotesForLead(lead.id));
-    setNoteText('');
+    setSaving(true);
+    const res = await store.addLeadNote(lead.id, noteText.trim());
+    setSaving(false);
+    if (res.success) setNoteText('');
+    else alert(`Could not save note: ${res.message}`);
   };
 
-  const handleConvertClient = () => {
-    const client = store.convertLeadToClient(lead.id, 'SALES');
-    if (client) {
-      alert(`Lead ${lead.lead_id} converted to Client: ${client.name}`);
-      navigate('/operationsbyivox/clients');
-    }
+  const handleConvertClient = async () => {
+    const client = await store.convertLeadToClient(lead.id);
+    if (client) navigate('/operationsbyivox/clients');
+    else alert('Could not convert this lead. Please try again.');
   };
 
   return (
@@ -109,7 +104,7 @@ export const LeadDetail: React.FC = () => {
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-600">Stage:</span>
             <select
-              value={currentStatus}
+              value={lead.status}
               onChange={(e) => handleStatusChange(e.target.value as LeadStatus)}
               className="px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-slate-900 text-xs font-bold focus:outline-none focus:border-brand-500"
             >
@@ -192,10 +187,11 @@ export const LeadDetail: React.FC = () => {
           />
           <button
             type="submit"
-            className="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+            disabled={saving}
+            className="px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-50"
           >
             <Send className="w-3.5 h-3.5" />
-            <span>Record Internal Note</span>
+            <span>{saving ? 'Saving...' : 'Record Internal Note'}</span>
           </button>
         </form>
 

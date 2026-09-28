@@ -2,24 +2,18 @@ import React from 'react';
 
 interface BrandLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
-  variant?: 'light' | 'dark';
   layout?: 'horizontal' | 'vertical';
   showTagline?: boolean;
   className?: string;
-  iconClassName?: string;
 }
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   size = 'md',
-  variant = 'light',
   layout = 'horizontal',
   showTagline = true,
   className = '',
-  iconClassName = '',
 }) => {
-  const isDark = variant === 'dark';
-  const mainTextColor = isDark ? 'text-white' : 'text-slate-900';
-  const taglineGray = isDark ? 'text-slate-400' : 'text-slate-500';
+  const taglineGray = 'text-slate-500';
 
   // Size mapping
   const sizeStyles = {
@@ -61,7 +55,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       <img
         src="/ivoxstack-icon-transparent.png"
         alt="IvoxStack Emblem"
-        className={`${sizeStyles.icon} object-contain drop-shadow-sm select-none shrink-0 ${iconClassName}`}
+        className={`${sizeStyles.icon} object-contain drop-shadow-sm select-none shrink-0`}
         loading="eager"
       />
 
@@ -69,7 +63,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       <div className={`flex flex-col leading-none select-none ${isVertical ? 'items-center' : 'items-stretch'}`}>
         {/* Top Wordmark: IvoxStack */}
         <div
-          className={`font-black tracking-tight flex items-center font-sans ${sizeStyles.title} ${mainTextColor} shrink-0`}
+          className={`font-black tracking-tight flex items-center font-sans ${sizeStyles.title} text-slate-900 shrink-0`}
           style={{ letterSpacing: '-0.02em' }}
         >
           <span>Ivox</span>
@@ -111,4 +105,3 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   );
 };
 
-export default BrandLogo;

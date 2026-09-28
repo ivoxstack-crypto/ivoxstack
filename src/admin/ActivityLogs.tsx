@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { History, ShieldCheck, Clock } from 'lucide-react';
 import { store } from '../lib/store';
+import { useStoreVersion } from '../lib/useStore';
 
 export const ActivityLogs: React.FC = () => {
+  useStoreVersion();
   const [activeTab, setActiveTab] = useState<'activity' | 'audit'>('activity');
   const activityLogs = store.getActivityLogs();
   const auditLogs = store.getAuditLogs();

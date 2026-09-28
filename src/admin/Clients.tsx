@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Briefcase, Phone, Mail, Plus, UserCheck } from 'lucide-react';
+import React from 'react';
+import { Briefcase, Phone, Mail } from 'lucide-react';
 import { WhatsAppIcon } from '../components/WhatsAppIcon';
 import { store } from '../lib/store';
+import { useStoreVersion } from '../lib/useStore';
 import { buildWhatsAppUrl } from '../lib/utils';
 
 export const Clients: React.FC = () => {
+  useStoreVersion();
   const clients = store.getClients();
 
   return (
@@ -17,6 +19,11 @@ export const Clients: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {clients.length === 0 && (
+          <div className="col-span-full p-10 rounded-3xl bg-white border border-dashed border-slate-300 text-center text-xs text-slate-400">
+            No clients yet. Convert a lead from Leads &amp; CRM to create one.
+          </div>
+        )}
         {clients.map((c, idx) => {
           const clientThemes = ['card-theme-blue', 'card-theme-emerald', 'card-theme-purple', 'card-theme-orange'];
           const currentTheme = clientThemes[idx % clientThemes.length];

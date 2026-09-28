@@ -1,28 +1,25 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Users, 
   Sparkles, 
   CheckCircle2, 
   Trophy, 
-  Phone, 
   DollarSign, 
   Briefcase, 
-  TrendingUp,
   ArrowRight,
-  Clock,
   ExternalLink
 } from 'lucide-react';
 import { WhatsAppIcon } from '../components/WhatsAppIcon';
 import { store } from '../lib/store';
+import { useStoreVersion } from '../lib/useStore';
 import { formatINR, buildWhatsAppUrl } from '../lib/utils';
 
 export const Dashboard: React.FC = () => {
+  useStoreVersion();
   const leads = store.getLeads();
-  const clients = store.getClients();
   const projects = store.getProjects();
   const invoices = store.getInvoices();
-  const settings = store.getSettings();
 
   const totalLeads = leads.length;
   const newLeads = leads.filter(l => l.status === 'NEW').length;
@@ -37,8 +34,6 @@ export const Dashboard: React.FC = () => {
     { title: 'New Inquiries', val: newLeads, sub: 'Needs outreach', icon: <Sparkles className="w-5 h-5 text-orange-600" />, theme: 'card-theme-orange' },
     { title: 'Qualified Leads', val: qualifiedLeads, sub: 'In sales pipeline', icon: <CheckCircle2 className="w-5 h-5 text-indigo-600" />, theme: 'card-theme-indigo' },
     { title: 'Won Deals', val: wonLeads, sub: `Conv. Rate: ${conversionRate}%`, icon: <Trophy className="w-5 h-5 text-emerald-600" />, theme: 'card-theme-emerald' },
-    { title: 'WhatsApp Clicks', val: 148, sub: 'Direct chats initiated', icon: <WhatsAppIcon className="w-5 h-5 fill-emerald-600" />, theme: 'card-theme-cyan' },
-    { title: 'Call Clicks', val: 62, sub: 'Direct phone inquiries', icon: <Phone className="w-5 h-5 text-sky-600" />, theme: 'card-theme-blue' },
     { title: 'Pending Payments', val: formatINR(pendingPayments), sub: 'From active invoices', icon: <DollarSign className="w-5 h-5 text-amber-600" />, theme: 'card-theme-amber' },
     { title: 'Active Projects', val: activeProjects, sub: `${projects.length} total projects`, icon: <Briefcase className="w-5 h-5 text-purple-600" />, theme: 'card-theme-purple' },
   ];
@@ -63,7 +58,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* KPI Cards Grid with Distinct Logo Light Colors and Zoom */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {kpis.map((k, idx) => (
           <div key={idx} className={`p-5 rounded-3xl card-interactive flex flex-col justify-between ${k.theme}`}>
             <div className="flex items-center justify-between mb-3">
@@ -110,6 +105,13 @@ export const Dashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
+              {leads.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center text-slate-400">
+                    No inquiries yet. New leads from the website appear here automatically.
+                  </td>
+                </tr>
+              )}
               {leads.slice(0, 5).map((lead) => {
                 const statusColors: Record<string, string> = {
                   NEW: 'bg-orange-50 text-orange-700 border-orange-200',

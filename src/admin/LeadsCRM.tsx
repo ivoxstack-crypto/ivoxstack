@@ -2,25 +2,21 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, 
-  Filter, 
   Download, 
   ExternalLink, 
-  Plus, 
-  Phone, 
-  Check, 
-  ChevronRight,
   UserCheck
 } from 'lucide-react';
 import { WhatsAppIcon } from '../components/WhatsAppIcon';
 import { store } from '../lib/store';
-import { Lead, LeadStatus } from '../types';
+import { useStoreVersion } from '../lib/useStore';
+import { LeadStatus } from '../types';
 import { buildWhatsAppUrl } from '../lib/utils';
 
 export const LeadsCRM: React.FC = () => {
-  const [leads, setLeads] = useState<Lead[]>(store.getLeads());
+  useStoreVersion();
+  const leads = store.getLeads();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [viewMode, setViewMode] = useState<'table' | 'pipeline'>('table');
 
   const statuses: LeadStatus[] = ['NEW', 'CONTACTED', 'QUALIFIED', 'FOLLOW-UP', 'WON', 'LOST'];
 
@@ -37,17 +33,14 @@ export const LeadsCRM: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleStatusChange = (leadId: string, newStatus: LeadStatus) => {
-    store.updateLeadStatus(leadId, newStatus, 'ADMIN');
-    setLeads([...store.getLeads()]);
+  const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
+    const res = await store.updateLeadStatus(leadId, newStatus);
+    if (!res.success) alert(`Could not update status: ${res.message}`);
   };
 
-  const handleConvertToClient = (leadId: string) => {
-    const client = store.convertLeadToClient(leadId, 'SALES');
-    if (client) {
-      alert(`Lead converted into Client successfully: ${client.name}`);
-      setLeads([...store.getLeads()]);
-    }
+  const handleConvertToClient = async (leadId: string) => {
+    const client = await store.convertLeadToClient(leadId);
+    alert(client ? `Lead converted into client: ${client.name}` : 'Could not convert this lead. Please try again.');
   };
 
   const handleExportCSV = () => {
@@ -77,14 +70,6 @@ export const LeadsCRM: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  const statusColors: Record<string, string> = {
-    NEW: 'bg-accent-500/20 text-accent-400 border-accent-500/30',
-    CONTACTED: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-    QUALIFIED: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-    'FOLLOW-UP': 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    WON: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-    LOST: 'bg-slate-800 text-slate-400 border-slate-700',
-  };
 
   return (
     <div className="space-y-6">
@@ -161,6 +146,13 @@ export const LeadsCRM: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
+              {filteredLeads.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-slate-400">
+                    {leads.length === 0 ? 'No leads yet. Website inquiries will appear here.' : 'No leads match this filter.'}
+                  </td>
+                </tr>
+              )}
               {filteredLeads.map((lead) => {
                 const statusColors: Record<string, string> = {
                   NEW: 'bg-orange-50 text-orange-700 border-orange-200',

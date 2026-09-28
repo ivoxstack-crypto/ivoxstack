@@ -1,128 +1,55 @@
-# IvoxStack — Digital Solutions Platform
+# IvoxStack
 
-> **Digital Solutions Built for Business Growth**  
-> Complete web engineering, performance advertising, creative design, and business automation platforms built for modern enterprises.
+Marketing website + staff operations portal for IvoxStack — *Digital Solutions Built for Business Growth*.
 
----
+- **Frontend:** React 18, TypeScript, Vite, Tailwind CSS
+- **Backend:** Supabase (Postgres + Auth + Row Level Security) — the browser talks to it directly, no server code
+- **Hosting:** Netlify (static build from this repo)
 
-## 📁 Project Architecture & Folder Structure (Beginner Friendly)
+## How it works
 
-This project is organized into a clean, modular structure where the **Frontend** and **Backend** are clearly separated:
+| What | Where it lives |
+| --- | --- |
+| Services, portfolio, site settings | Supabase tables `services`, `portfolio`, `site_settings` — edited from the admin portal |
+| Inquiry forms (lead modal, contact, free audit) | Insert into `leads`. Visitors can insert but never read. |
+| Admin portal `/operationsbyivox` | Supabase Auth sign-in. Only users listed in the `staff` table get access. |
+| Pricing catalog & calculator | In code (`src/pages/PricingPage.tsx`, `src/components/CostCalculator.tsx`) |
+
+The site ships with built-in defaults (`src/lib/defaults.ts`) so it renders instantly; live values from Supabase replace them as soon as they load.
+
+## Project structure
 
 ```
-IvoxStack/
-│
-├── 🛠️ backend/                    # Backend & Database Layer
-│   ├── database/                  # Supabase SQL database schemas & migrations
-│   │   ├── 001_initial_schema.sql # Core tables (leads, clients, projects, invoices, cms)
-│   │   ├── 002_rls.sql            # Row Level Security (RLS) policies
-│   │   └── 003_seed_data.sql      # Initial catalog & seed data
-│   └── functions/                 # Netlify Serverless API endpoints & webhooks
-│       ├── admin-stats.ts         # Operations analytics endpoint
-│       ├── backup-data.ts         # Database snapshot backup
-│       ├── create-lead.ts         # Lead intake validation
-│       ├── export-leads.ts        # CSV export handler
-│       ├── restore-data.ts        # Database restore handler
-│       └── webhook-lead.ts        # Incoming webhook automation
-│
-├── 🌐 public/                     # Public Static Assets (Clean & Minimal)
-│   ├── ivoxstack-icon-transparent.png # Official vector icon
-│   ├── nva-infracon.png           # Client portfolio asset
-│   ├── robots.txt                 # SEO crawler instructions
-│   └── sitemap.xml                # SEO sitemap
-│
-├── 💻 src/                        # Frontend React Application
-│   ├── admin/                     # Operations Admin Portal & CRM
-│   │   ├── AdminLayout.tsx        # Sidebar & Topbar shell
-│   │   ├── AdminLogin.tsx         # Secure admin login
-│   │   ├── Dashboard.tsx          # Key metrics, MRR, lead velocity
-│   │   ├── LeadsCRM.tsx           # Pipeline management (New, Contacted, Won, Lost)
-│   │   ├── LeadDetail.tsx         # Detailed lead view & timeline
-│   │   ├── Clients.tsx            # Client directory & contract values
-│   │   ├── Projects.tsx           # Project milestone delivery tracker
-│   │   ├── Invoices.tsx           # Invoices & payment logs
-│   │   ├── ServicesCMS.tsx        # Services content editor
-│   │   ├── PricingCMS.tsx         # Pricing catalog editor
-│   │   ├── PortfolioCMS.tsx       # Portfolio item editor
-│   │   ├── Reports.tsx            # Business intelligence & conversion rates
-│   │   ├── ActivityLogs.tsx       # Audit trail & system logs
-│   │   ├── Settings.tsx           # Platform settings, WhatsApp numbers, currency
-│   │   └── BackupSecurity.tsx     # Cloud backup triggers & IP security
-│   │
-│   ├── components/                # Reusable UI Components
-│   │   ├── BrandLogo.tsx          # IvoxStack brand lockup
-│   │   ├── CostCalculator.tsx     # Real-time project cost calculator
-│   │   ├── FloatingWhatsApp.tsx   # Persistent quick-contact widget
-│   │   ├── Footer.tsx             # Global footer with legal links
-│   │   ├── Header.tsx             # Global navigation bar & drawer
-│   │   ├── HeroRotatingOrbit.tsx  # Interactive revolving services orbit
-│   │   ├── LeadModal.tsx          # Universal inquiry lead modal
-│   │   ├── PdfPreviewModal.tsx    # PDF portfolio viewer
-│   │   ├── StartingPrices.tsx     # Transparent starting price cards
-│   │   └── WhatsAppIcon.tsx       # Official WhatsApp vector icon
-│   │
-│   ├── lib/                       # Application Core & Utilities
-│   │   ├── analytics.ts           # UTM tracking & click event telemetry
-│   │   ├── store.ts               # State manager & localStorage fallback
-│   │   ├── supabase.ts            # Supabase client connector
-│   │   └── utils.ts               # Currency formatting (INR) & WhatsApp URL builders
-│   │
-│   ├── pages/                     # Public Website Pages
-│   │   ├── AboutPage.tsx          # Company overview & principles
-│   │   ├── CalculatorPage.tsx     # Dedicated cost estimation page
-│   │   ├── CaseStudiesPage.tsx    # Verified client case studies
-│   │   ├── ContactPage.tsx        # Direct contact & inquiry form
-│   │   ├── DigitalAuditPage.tsx   # Free digital audit request page
-│   │   ├── HomePage.tsx           # Main landing page
-│   │   ├── NotFoundPage.tsx       # 404 page
-│   │   ├── PortfolioPage.tsx      # Client portfolio & pitch decks
-│   │   ├── PricingPage.tsx        # Categorized pricing catalog with URL sync
-│   │   ├── ServicesPage.tsx       # 15 complete digital solutions
-│   │   ├── ThankYouPage.tsx       # Post-inquiry confirmation page
-│   │   └── legal/
-│   │       └── LegalPages.tsx     # Privacy, Terms, Refund, Cookie, Revision policies
-│   │
-│   ├── types/                     # TypeScript Data Definitions
-│   │   └── index.ts               # Centralized interfaces & models
-│   │
-│   ├── App.tsx                    # Main routing shell & modal providers
-│   ├── index.css                  # Tailored design system, tokens & glassmorphism
-│   ├── main.tsx                   # React root entry point
-│   └── vite-env.d.ts              # Vite environment types
-│
-├── .env.example                   # Environment configuration template
-├── index.html                     # HTML5 entry with IvoxStack metadata
-├── netlify.toml                   # Netlify hosting & serverless function config
-├── package.json                   # Dependencies & build scripts
-├── postcss.config.js              # PostCSS configuration
-├── tailwind.config.js             # Tailwind CSS tokens & customized radii
-├── tsconfig.json                  # TypeScript compiler settings
-└── vite.config.ts                 # Vite bundler configuration
+src/
+  admin/        Operations portal (leads CRM, clients, projects, CMS, settings)
+  components/   Shared UI (header, footer, lead form, calculator, ...)
+  pages/        Public pages
+  lib/          store.ts (Supabase data layer), supabase.ts, analytics.ts, defaults.ts
+supabase/
+  schema.sql    Tables, RLS policies, staff check, lead-activity trigger (safe to re-run)
+  seed.sql      Initial content, generated by scripts/generate-seed.mts
 ```
 
----
+## Local development
 
-## 🚀 Getting Started
-
-### 1. Install Dependencies
 ```bash
+cp .env.example .env      # fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
 npm install
+npm run dev               # http://localhost:3000
 ```
 
-### 2. Run Local Development Server
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+## Setting up a Supabase project from scratch
 
-### 3. Build for Production
-```bash
-npm run build
-```
-Creates an optimized production bundle inside the `dist/` directory.
+1. Run `supabase/schema.sql`, then `supabase/seed.sql`, in the Supabase SQL editor.
+2. Authentication → Sign In / Providers: turn **off** "Allow new users to sign up".
+3. Authentication → Users → **Add user** with the admin's email and a strong password.
+4. Give that user staff access:
+   ```sql
+   insert into public.staff (user_id, email, full_name, role)
+   select id, email, 'Admin', 'SUPER_ADMIN' from auth.users where email = 'admin@example.com';
+   ```
+5. In Netlify → Site configuration → Environment variables, set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, then redeploy.
 
----
+## Deploying
 
-## 🔐 Accessing Operations Admin Portal
-- Navigate to `/operations/login` (e.g. `http://localhost:3000/operations/login`)
-- Click **"Autofill Super Admin Credentials"** to quickly log in to the Operations Dashboard, Leads CRM, Projects, and CMS.
+Pushing to `main` triggers a Netlify build (`npm run build` → `dist/`). The `VITE_*` variables are baked in at build time, so redeploy after changing them.

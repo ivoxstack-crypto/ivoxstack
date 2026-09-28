@@ -25,7 +25,7 @@ export function getUTMParams(): UTMParams {
   if (Object.keys(utm).length > 0) {
     sessionStorage.setItem('ivoxstack_utm', JSON.stringify(utm));
   } else {
-    const cached = sessionStorage.getItem('ivoxstack_utm') || sessionStorage.getItem('digimarketive_utm');
+    const cached = sessionStorage.getItem('ivoxstack_utm');
     if (cached) {
       try {
         return JSON.parse(cached);
@@ -36,6 +36,52 @@ export function getUTMParams(): UTMParams {
   }
 
   return utm;
+}
+
+const loadedTrackers = new Set<string>();
+
+/** Injects the Meta Pixel and GA4 scripts once, using the IDs saved in admin settings. */
+export function loadTrackingScripts(metaPixelId: string, ga4Id: string) {
+  const w = window as any;
+
+  if (metaPixelId && !loadedTrackers.has('fbq')) {
+    loadedTrackers.add('fbq');
+    const fbq: any = function (...args: any[]) {
+      fbq.callMethod ? fbq.callMethod(...args) : fbq.queue.push(args);
+    };
+    fbq.queue = [];
+    fbq.loaded = true;
+    fbq.version = '2.0';
+    w.fbq = w._fbq = fbq;
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://connect.facebook.net/en_US/fbevents.js';
+    document.head.appendChild(s);
+    w.fbq('init', metaPixelId);
+  }
+
+  if (ga4Id && !loadedTrackers.has('gtag')) {
+    loadedTrackers.add('gtag');
+    w.dataLayer = w.dataLayer || [];
+    w.gtag = function () {
+      // gtag.js expects the raw `arguments` object
+      // eslint-disable-next-line prefer-rest-params
+      w.dataLayer.push(arguments);
+    };
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ga4Id)}`;
+    document.head.appendChild(s);
+    w.gtag('js', new Date());
+    // Page views are sent manually on every route change (SPA)
+    w.gtag('config', ga4Id, { send_page_view: false });
+  }
+}
+
+export function trackPageView() {
+  const w = window as any;
+  w.fbq?.('track', 'PageView');
+  w.gtag?.('event', 'page_view', { page_path: window.location.pathname, page_location: window.location.href });
 }
 
 export function trackMetaPixel(eventName: string, params: Record<string, any> = {}) {

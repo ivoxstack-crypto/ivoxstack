@@ -1,9 +1,10 @@
 import React from 'react';
-import { DollarSign, CheckCircle2, Clock, AlertCircle, FileText } from 'lucide-react';
 import { store } from '../lib/store';
+import { useStoreVersion } from '../lib/useStore';
 import { formatINR } from '../lib/utils';
 
 export const Invoices: React.FC = () => {
+  useStoreVersion();
   const invoices = store.getInvoices();
 
   const totalCollected = invoices.filter(i => i.status === 'Paid').reduce((sum, i) => sum + i.amount, 0);
@@ -44,6 +45,11 @@ export const Invoices: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
+              {invoices.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-8 text-center text-slate-400">No invoices recorded yet.</td>
+                </tr>
+              )}
               {invoices.map((inv) => (
                 <tr key={inv.id} className="hover:bg-slate-50/80 transition-colors">
                   <td className="p-4 font-mono font-bold text-brand-600">{inv.invoice_number}</td>

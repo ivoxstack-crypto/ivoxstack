@@ -1,10 +1,3 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
 /**
  * Formats an amount into Indian Rupees (INR) format.
  * Examples: ₹99, ₹2,999, ₹39,969, ₹6,999/month
@@ -26,14 +19,6 @@ export function buildWhatsAppUrl(message: string, whatsappNumber = '918252257405
   const cleanPhone = whatsappNumber.replace(/[^0-9]/g, '');
   const encodedMsg = encodeURIComponent(message.trim());
   return `https://wa.me/${cleanPhone}?text=${encodedMsg}`;
-}
-
-/**
- * Generates a unique Lead ID in the format LEAD-XXXXXX
- */
-export function generateLeadId(): string {
-  const randomNum = Math.floor(100000 + Math.random() * 900000);
-  return `LEAD-${randomNum}`;
 }
 
 /**

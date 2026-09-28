@@ -1,621 +1,385 @@
-import { 
-  Lead, 
-  Client, 
-  Project, 
-  Order, 
-  Payment, 
-  Invoice, 
-  ServiceItem, 
-  PricingPlan, 
-  PortfolioItem, 
-  CaseStudy, 
-  SiteSettings, 
-  ActivityLog, 
-  AuditLog, 
+import type {
+  Lead,
+  Client,
+  Project,
+  Invoice,
+  ServiceItem,
+  PortfolioItem,
+  SiteSettings,
+  ActivityLog,
+  AuditLog,
   AdminUser,
-  LeadNote
+  LeadNote,
 } from '../types';
-import { supabase, isSupabaseConfigured } from './supabase';
+import type { User } from '@supabase/supabase-js';
+import { supabase } from './supabase';
+import { DEFAULT_SETTINGS, DEFAULT_SERVICES, DEFAULT_PORTFOLIO } from './defaults';
 
-const INITIAL_SETTINGS: SiteSettings = {
-  site_name: 'IvoxStack',
-  tagline: 'Digital Solutions Built for Business Growth',
-  phone: '+91 82522 57405',
-  whatsapp: '918252257405',
-  email: 'digimarketive@gmail.com',
-  address: 'Ghitorni, New Delhi - 110030',
-  business_hours: 'Monday - Saturday: 9:30 AM - 7:30 PM',
-  social_links: {
-    instagram: 'https://instagram.com/ivoxstack',
-    facebook: 'https://facebook.com/ivoxstack',
-    linkedin: 'https://linkedin.com/company/ivoxstack',
-  },
-  meta_pixel_id: '',
-  ga4_id: '',
-  webhook_url: '',
-  maintenance_mode: false,
-  announcement_active: true,
-  announcement_text: '🚀 Special Growth Launch — Get 20% Off All Digital Growth Bundles This Month!',
-  announcement_link: '/pricing',
-};
+type Result = { success: boolean; message?: string };
+type NewLead = Omit<Lead, 'id' | 'lead_id' | 'status' | 'created_at'>;
 
-export const INITIAL_SERVICES: ServiceItem[] = [
-  {
-    id: 'srv-1',
-    name: 'Website Design & Development',
-    slug: 'website-design-development',
-    short_description: 'High-speed, conversion-focused websites, landing pages, and enterprise web solutions.',
-    starting_price: 2999,
-    icon: 'Globe',
-    features: ['Modern UI/UX', 'Mobile Responsive', 'SEO Optimized', 'Speed Tuned', 'Lead Capture Funnels'],
-    display_order: 1,
-    is_active: true,
-  },
-  {
-    id: 'srv-2',
-    name: 'Creative Design',
-    slug: 'creative-design',
-    short_description: 'High-impact social media creatives, promotional posters, and ad designs.',
-    starting_price: 99,
-    icon: 'Palette',
-    features: ['Custom Visuals', 'High Click-Through Design', 'Brand Typography', 'Ad Formats', 'Fast Turnaround'],
-    display_order: 2,
-    is_active: true,
-  },
-  {
-    id: 'srv-3',
-    name: 'Video Editing & Reels',
-    slug: 'video-editing-reels',
-    short_description: 'Dynamic short-form video, Instagram reels, motion captions, and direct-response hooks.',
-    starting_price: 349,
-    icon: 'Video',
-    features: ['Hook Scripting', 'Dynamic Captions', 'Sound Design & SFX', 'Color Grading', 'Viral Pacing'],
-    display_order: 3,
-    is_active: true,
-  },
-  {
-    id: 'srv-4',
-    name: 'Social Media Management',
-    slug: 'social-media-management',
-    short_description: 'Organic brand presence, strategic content calendars, reels, stories, and engagement.',
-    starting_price: 6999,
-    icon: 'Share2',
-    features: ['12-20 Monthly Posts', 'Reels & Stories', 'Hashtag & Caption Strategy', 'Monthly Analytics', 'Community Moderation'],
-    display_order: 4,
-    is_active: true,
-  },
-  {
-    id: 'srv-5',
-    name: 'Meta Ads Management',
-    slug: 'meta-ads-management',
-    short_description: 'High-ROAS Facebook & Instagram campaigns, custom audiences, retargeting & scaling.',
-    starting_price: 4999,
-    icon: 'Target',
-    features: ['Ad Account Setup', 'Audience Research', 'A/B Creative Testing', 'Pixel Integration', 'Weekly Optimization'],
-    display_order: 5,
-    is_active: true,
-  },
-  {
-    id: 'srv-6',
-    name: 'Lead Generation',
-    slug: 'lead-generation',
-    short_description: 'High-intent B2B & B2C customer acquisition funnels that convert visitors into qualified leads.',
-    starting_price: 9999,
-    icon: 'Users',
-    features: ['Custom Funnels', 'Instant WhatsApp Alerts', 'CRM Synchronization', 'Automated Qualification', 'Scalable Volume'],
-    display_order: 6,
-    is_active: true,
-  },
-  {
-    id: 'srv-7',
-    name: 'Google Ads',
-    slug: 'google-ads',
-    short_description: 'High-intent search ads, Performance Max campaigns, and display retargeting.',
-    starting_price: 2999,
-    icon: 'Search',
-    features: ['Search Keyword Research', 'P-Max Campaigns', 'Negative Keyword Lists', 'Conversion Tracking', 'ROI Focus'],
-    display_order: 7,
-    is_active: true,
-  },
-  {
-    id: 'srv-8',
-    name: 'Google Business Profile',
-    slug: 'google-business-profile',
-    short_description: 'Rank #1 on Google Maps for local searches, review strategies, and direct lead calls.',
-    starting_price: 999,
-    icon: 'MapPin',
-    features: ['Profile Optimization', 'Local Geotagging', 'Review Generation Strategy', 'Weekly Posts', 'Call Tracking'],
-    display_order: 8,
-    is_active: true,
-  },
-  {
-    id: 'srv-9',
-    name: 'Local Business Marketing',
-    slug: 'local-business-marketing',
-    short_description: 'Hyper-local advertising, WhatsApp inquiries, and local discovery campaigns.',
-    starting_price: 7999,
-    icon: 'Store',
-    features: ['Hyper-Local Geo Ads', 'Google Maps Boost', 'Local WhatsApp Marketing', 'Community Engagement', 'Store Footfall'],
-    display_order: 9,
-    is_active: true,
-  },
-  {
-    id: 'srv-10',
-    name: 'Branding & Identity',
-    slug: 'branding-identity',
-    short_description: 'Complete brand books, logos, color systems, stationery, and vector guidelines.',
-    starting_price: 2999,
-    icon: 'Sparkles',
-    features: ['Logo Suite & Vectors', 'Color Palette & Typography', 'Stationery Kit', 'Social Media Kit', 'Brand Usage Guidelines'],
-    display_order: 10,
-    is_active: true,
-  },
-  {
-    id: 'srv-11',
-    name: 'Search Engine Optimization (SEO)',
-    slug: 'seo',
-    short_description: 'Technical SEO, on-page optimization, local maps ranking, and organic traffic growth.',
-    starting_price: 4999,
-    icon: 'TrendingUp',
-    features: ['Keyword Analysis', 'Technical Audits', 'On-Page Optimization', 'Backlink Strategy', 'Monthly Rank Reports'],
-    display_order: 11,
-    is_active: true,
-  },
-  {
-    id: 'srv-12',
-    name: 'Marketing Automation',
-    slug: 'marketing-automation',
-    short_description: 'Automated WhatsApp routing, lead sync, email workflows, and CRM pipelines.',
-    starting_price: 4999,
-    icon: 'Cpu',
-    features: ['WhatsApp Auto-Replies', 'CRM Webhook Integrations', 'Lead Notification Bots', 'Zero Manual Entry', 'Instant Speed to Lead'],
-    display_order: 12,
-    is_active: true,
-  },
-  {
-    id: 'srv-13',
-    name: 'WhatsApp Marketing',
-    slug: 'whatsapp-marketing',
-    short_description: 'Official WhatsApp template broadcasts, segmentation, and automated customer journeys.',
-    starting_price: 999,
-    icon: 'MessageCircle',
-    features: ['Meta Verified Templates', 'Segmented Broadcasts', 'Interactive CTA Buttons', 'Opt-In Lists', 'High Open Rates (98%)'],
-    display_order: 13,
-    is_active: true,
-  },
-  {
-    id: 'srv-14',
-    name: 'Content Writing',
-    slug: 'content-writing',
-    short_description: 'Persuasive ad copy, website copy, sales letters, and SEO-optimized blogs.',
-    starting_price: 99,
-    icon: 'PenTool',
-    features: ['Direct Response Copy', 'High-CTR Ad Copy', 'Website Page Copy', 'SEO Blog Articles', 'Tone-of-Voice Alignment'],
-    display_order: 14,
-    is_active: true,
-  },
-  {
-    id: 'srv-15',
-    name: 'Website Maintenance',
-    slug: 'website-maintenance',
-    short_description: 'Regular backups, SSL security, speed optimization, uptime checks, and content updates.',
-    starting_price: 999,
-    icon: 'ShieldCheck',
-    features: ['Automated Backups', 'SSL & Security Audits', 'Speed & Cache Tuning', 'Content Updates', 'Fast Support Turnaround'],
-    display_order: 15,
-    is_active: true,
-  },
-];
+const BACKEND_UNAVAILABLE = 'Our inquiry system is temporarily unavailable. Please contact us on WhatsApp.';
 
-export const INITIAL_PORTFOLIO: PortfolioItem[] = [
-  {
-    id: 'port-3',
-    title: 'NVA Infracon Corporate Infrastructure Portal',
-    category: 'Websites',
-    client: 'NVA Infracon',
-    description: 'Modern infrastructure corporate portal, commercial civil construction project showcases, and dynamic procurement funnels.',
-    image: '/nva-infracon.png',
-    project_url: 'https://nvainfracon.com',
-    is_featured: true,
-    is_published: true,
-    display_order: 1,
-  }
-];
-
-export const INITIAL_LEADS: Lead[] = [
-  {
-    id: 'ld-1',
-    lead_id: 'LEAD-892341',
-    full_name: 'Vikramaditya Sharma',
-    business_name: 'Apex Hospitality Group',
-    phone: '+91 98230 45678',
-    email: 'vikram@apexhospitality.in',
-    service: 'Website Design & Development',
-    budget: '₹25,000–₹50,000',
-    timeline: 'Within 7 Days',
-    project_details: 'Need a luxury resort booking website with WhatsApp integration and Meta pixel for ad campaigns.',
-    status: 'QUALIFIED',
-    utm_source: 'google',
-    utm_medium: 'cpc',
-    utm_campaign: 'resort_leads_q3',
-    created_at: new Date(Date.now() - 24 * 3600000).toISOString(),
-  },
-  {
-    id: 'ld-2',
-    lead_id: 'LEAD-612984',
-    full_name: 'Rajesh Agrawal',
-    business_name: 'Agrawal Auto Dealership',
-    phone: '+91 99112 34567',
-    email: 'rajesh@agrawalmotors.com',
-    service: 'Lead Generation',
-    budget: '₹10,000–₹25,000',
-    timeline: 'Immediately',
-    project_details: 'Seeking regular car buyers in Varanasi region via Meta Ads and WhatsApp follow-up.',
-    status: 'NEW',
-    utm_source: 'meta',
-    utm_medium: 'paid',
-    utm_campaign: 'dealership_growth',
-    created_at: new Date(Date.now() - 12 * 3600000).toISOString(),
-  },
-  {
-    id: 'ld-3',
-    lead_id: 'LEAD-734190',
-    full_name: 'Dr. Ananya Sen',
-    business_name: 'Sen Dental & Aesthetic Clinic',
-    phone: '+91 98450 12389',
-    email: 'drananya@senclinic.com',
-    service: 'Google Business Profile',
-    budget: '₹5,000–₹10,000',
-    timeline: 'Within This Month',
-    project_details: 'Optimize Google Maps listing for aesthetic dental implants in NCR.',
-    status: 'CONTACTED',
-    utm_source: 'direct',
-    created_at: new Date(Date.now() - 48 * 3600000).toISOString(),
-  },
-  {
-    id: 'ld-4',
-    lead_id: 'LEAD-489021',
-    full_name: 'Karan Mehra',
-    business_name: 'UrbanStyle D2C Fashion',
-    phone: '+91 97118 90214',
-    email: 'karan@urbanstyle.co',
-    service: 'Meta Ads Management',
-    budget: '₹25,000–₹50,000',
-    timeline: 'Immediately',
-    project_details: 'Scaled fashion brand needing direct ROAS 4.5+ scaling on Instagram.',
-    status: 'WON',
-    utm_source: 'instagram',
-    utm_medium: 'organic',
-    created_at: new Date(Date.now() - 72 * 3600000).toISOString(),
-  }
-];
-
-export const INITIAL_CLIENTS: Client[] = [
-  {
-    id: 'cl-1',
-    name: 'Karan Mehra',
-    company: 'UrbanStyle D2C Fashion',
-    phone: '+91 97118 90214',
-    email: 'karan@urbanstyle.co',
-    source_lead_id: 'ld-4',
-    status: 'ACTIVE',
-    assigned_manager: 'Shubham Pandey',
-    notes: 'Retainer client. Meta ads + creative packages.',
-    created_at: new Date(Date.now() - 60 * 3600000).toISOString(),
-  },
-  {
-    id: 'cl-2',
-    name: 'Vikramaditya Sharma',
-    company: 'Apex Hospitality Group',
-    phone: '+91 98230 45678',
-    email: 'vikram@apexhospitality.in',
-    status: 'ACTIVE',
-    assigned_manager: 'Shubham Pandey',
-    notes: 'Luxury Web Platform and Direct Booking Concierge.',
-    created_at: new Date(Date.now() - 45 * 24 * 3600000).toISOString(),
-  }
-];
-
-export const INITIAL_PROJECTS: Project[] = [
-  {
-    id: 'proj-1',
-    client_id: 'cl-1',
-    client_name: 'UrbanStyle D2C Fashion',
-    name: 'Q3 Meta Ads Scaling & High-ROAS Creatives',
-    service: 'Meta Ads Management',
-    status: 'Active',
-    start_date: '2026-09-01',
-    deadline: '2026-09-30',
-    budget: 19999,
-    team_member: 'Shubham Pandey',
-    notes: 'Running 3 campaign angles with lookalike audiences.',
-    created_at: new Date(Date.now() - 14 * 24 * 3600000).toISOString(),
-  },
-  {
-    id: 'proj-2',
-    client_id: 'cl-2',
-    client_name: 'Apex Hospitality Group',
-    name: 'Luxury Web Platform & Direct Booking Concierge',
-    service: 'Website Design & Development',
-    status: 'Delivered',
-    start_date: '2026-08-01',
-    deadline: '2026-08-25',
-    budget: 34999,
-    team_member: 'Shubham Pandey',
-    notes: 'Delivered high-aesthetic resort portal and integrated WhatsApp concierge.',
-    created_at: new Date(Date.now() - 30 * 24 * 3600000).toISOString(),
-  }
-];
-
-export const INITIAL_INVOICES: Invoice[] = [
-  {
-    id: 'inv-1',
-    invoice_number: 'INV-2026-001',
-    client_id: 'cl-1',
-    client_name: 'UrbanStyle D2C Fashion',
-    amount: 19999,
-    tax_amount: 3599,
-    issue_date: '2026-09-01',
-    due_date: '2026-09-08',
-    status: 'Paid',
-    payment_method: 'UPI',
-    notes: 'September Retainer - Meta Ads',
-    created_at: new Date(Date.now() - 15 * 24 * 3600000).toISOString(),
-  },
-  {
-    id: 'inv-2',
-    invoice_number: 'INV-2026-002',
-    client_id: 'cl-2',
-    client_name: 'Apex Hospitality Group',
-    amount: 34999,
-    tax_amount: 6299,
-    issue_date: '2026-08-15',
-    due_date: '2026-08-22',
-    status: 'Paid',
-    payment_method: 'NEFT',
-    notes: 'Luxury Web Platform Deliverables',
-    created_at: new Date(Date.now() - 32 * 24 * 3600000).toISOString(),
-  }
-];
-
-// Helper to save/load state to persist in browser while allowing Supabase sync
+/**
+ * Single source of truth for the app.
+ *
+ * Public content (settings, services, portfolio) starts from the built-in defaults so the
+ * site renders instantly, then is replaced by the live rows from Supabase. Staff-only data
+ * (leads, clients, projects, ...) is loaded after a staff member signs in. Every write goes
+ * to Supabase first; the in-memory cache only changes once the database accepted it.
+ * Components subscribe via `useStoreVersion()` and re-render when anything changes.
+ */
 class StoreService {
-  private settings: SiteSettings;
-  private services: ServiceItem[];
-  private portfolio: PortfolioItem[];
-  private leads: Lead[];
-  private clients: Client[];
-  private projects: Project[];
-  private invoices: Invoice[];
-  private notes: LeadNote[];
-  private activityLogs: ActivityLog[];
-  private auditLogs: AuditLog[];
+  private settings: SiteSettings = DEFAULT_SETTINGS;
+  private services: ServiceItem[] = DEFAULT_SERVICES;
+  private portfolio: PortfolioItem[] = DEFAULT_PORTFOLIO;
+
+  private leads: Lead[] = [];
+  private notes: LeadNote[] = [];
+  private clients: Client[] = [];
+  private projects: Project[] = [];
+  private invoices: Invoice[] = [];
+  private activityLogs: ActivityLog[] = [];
+  private auditLogs: AuditLog[] = [];
+
   private currentAdmin: AdminUser | null = null;
-  private failedLoginAttempts = 0;
-  private lockoutUntil: number | null = null;
+  private authChecked = false;
 
-  constructor() {
-    this.settings = this.load('dm_settings', INITIAL_SETTINGS);
-    if (
-      this.settings.site_name === 'DigiMarketive' ||
-      this.settings.phone === '+91 98765 43210' ||
-      this.settings.email === 'hello@ivoxstack.com' ||
-      !this.settings.phone?.includes('82522') ||
-      this.settings.address === 'Varanasi & Noida, India' ||
-      !this.settings.address
-    ) {
-      this.settings.site_name = 'IvoxStack';
-      this.settings.phone = '+91 82522 57405';
-      this.settings.whatsapp = '918252257405';
-      this.settings.email = 'digimarketive@gmail.com';
-      this.settings.address = 'Ghitorni, New Delhi - 110030';
-      this.save('dm_settings', this.settings);
-    }
-    this.services = this.load('dm_services', INITIAL_SERVICES);
-    this.portfolio = this.load('dm_portfolio', INITIAL_PORTFOLIO);
-    
-    // Purge removed legacy items from localStorage cache
-    const REMOVED_NAMES = [
-      'Ultimate iTech',
-      'Indian Trade Mart',
-      'HHH-Jobs',
-      'Indian Properties',
-      'Connect Love',
-      'Srishti Tech',
-      'Eimager Visuals',
-      'UrbanStyle',
-      'Apex Luxury',
-      'Apex Hospitality',
-    ];
-    const cleaned = this.portfolio.filter(p => 
-      !REMOVED_NAMES.some(name => p.title.toLowerCase().includes(name.toLowerCase()) || p.client?.toLowerCase().includes(name.toLowerCase()))
-    );
-    if (cleaned.length !== this.portfolio.length || cleaned.length === 0) {
-      this.portfolio = cleaned.length > 0 ? cleaned : INITIAL_PORTFOLIO;
-      this.save('dm_portfolio', this.portfolio);
-    }
-    this.leads = this.load('dm_leads', INITIAL_LEADS);
-    this.clients = this.load('dm_clients', INITIAL_CLIENTS);
-    this.projects = this.load('dm_projects', INITIAL_PROJECTS);
-    this.invoices = this.load('dm_invoices', INITIAL_INVOICES);
-    this.notes = this.load('dm_notes', []);
-    this.activityLogs = this.load('dm_activity', [
-      {
-        id: 'act-1',
-        user_name: 'System',
-        action: 'PLATFORM_INIT',
-        entity: 'CORE',
-        details: 'IvoxStack platform initialized with complete digital solutions architecture.',
-        created_at: new Date().toISOString(),
-      }
+  private listeners = new Set<() => void>();
+  private version = 0;
+
+  // --- Subscriptions ---
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  };
+
+  getVersion = () => this.version;
+
+  private emit() {
+    this.version++;
+    this.listeners.forEach((l) => l());
+  }
+
+  // --- Bootstrapping ---
+  async init() {
+    await Promise.all([this.loadPublicContent(), this.restoreSession()]);
+  }
+
+  private async loadPublicContent() {
+    if (!supabase) return;
+    const [settingsRes, servicesRes, portfolioRes] = await Promise.all([
+      supabase.from('site_settings').select('data').eq('id', 1).maybeSingle(),
+      supabase.from('services').select('*').order('display_order'),
+      supabase.from('portfolio').select('*').order('display_order'),
     ]);
-    this.auditLogs = this.load('dm_audit', []);
-    
-    // Check existing auth session
-    const savedAdmin = sessionStorage.getItem('dm_admin_user');
-    if (savedAdmin) {
-      try {
-        this.currentAdmin = JSON.parse(savedAdmin);
-      } catch {
-        this.currentAdmin = null;
-      }
-    }
+
+    if (settingsRes.error) console.error('Failed to load settings:', settingsRes.error.message);
+    else if (settingsRes.data?.data) this.settings = { ...DEFAULT_SETTINGS, ...settingsRes.data.data };
+
+    if (servicesRes.error) console.error('Failed to load services:', servicesRes.error.message);
+    else if (servicesRes.data.length) this.services = servicesRes.data as ServiceItem[];
+
+    if (portfolioRes.error) console.error('Failed to load portfolio:', portfolioRes.error.message);
+    else this.portfolio = portfolioRes.data as PortfolioItem[];
+
+    this.emit();
   }
 
-  private load<T>(key: string, fallback: T): T {
-    try {
-      const data = localStorage.getItem(key);
-      return data ? JSON.parse(data) : fallback;
-    } catch {
-      return fallback;
-    }
-  }
-
-  private save<T>(key: string, data: T) {
-    try {
-      localStorage.setItem(key, JSON.stringify(data));
-    } catch {
-      // ignore
-    }
-  }
-
-  // --- Settings ---
+  // --- Public content ---
   getSettings(): SiteSettings {
     return this.settings;
   }
 
-  updateSettings(newSettings: Partial<SiteSettings>, userName = 'SUPER_ADMIN') {
-    const oldSettings = { ...this.settings };
-    this.settings = { ...this.settings, ...newSettings };
-    this.save('dm_settings', this.settings);
-    
-    this.logAudit(userName, 'UPDATE_SETTINGS', 'SITE_SETTINGS', JSON.stringify(oldSettings), JSON.stringify(this.settings));
-    this.logActivity(userName, 'UPDATE_SETTINGS', 'SETTINGS', 'Updated website configuration & metadata');
-    return this.settings;
-  }
-
-  // --- Services CMS ---
+  /** Services visible on the public site. */
   getServices(): ServiceItem[] {
-    return this.services.sort((a, b) => a.display_order - b.display_order);
+    return this.getAllServices().filter((s) => s.is_active);
   }
 
-  updateService(id: string, updates: Partial<ServiceItem>, userName = 'ADMIN') {
-    const idx = this.services.findIndex(s => s.id === id);
-    if (idx >= 0) {
-      const oldVal = JSON.stringify(this.services[idx]);
-      this.services[idx] = { ...this.services[idx], ...updates };
-      this.save('dm_services', this.services);
-      this.logAudit(userName, 'UPDATE_SERVICE', this.services[idx].name, oldVal, JSON.stringify(this.services[idx]));
-    }
-    return this.services;
+  /** Every service, including hidden ones (admin CMS). */
+  getAllServices(): ServiceItem[] {
+    return [...this.services].sort((a, b) => a.display_order - b.display_order);
   }
 
-  // --- Portfolio CMS ---
+  /** Portfolio items visible on the public site. */
   getPortfolio(): PortfolioItem[] {
-    return this.portfolio.sort((a, b) => a.display_order - b.display_order);
+    return this.getAllPortfolio().filter((p) => p.is_published);
   }
 
-  addPortfolioItem(item: Omit<PortfolioItem, 'id'>, userName = 'ADMIN'): PortfolioItem {
-    const newItem: PortfolioItem = {
-      ...item,
-      id: `port-${Date.now()}`,
-    };
+  getAllPortfolio(): PortfolioItem[] {
+    return [...this.portfolio].sort((a, b) => a.display_order - b.display_order);
+  }
+
+  // --- Public lead capture ---
+  async addLead(leadData: NewLead): Promise<Lead> {
+    if (!supabase) throw new Error(BACKEND_UNAVAILABLE);
+
+    const makeLead = (): Lead => ({
+      ...leadData,
+      id: crypto.randomUUID(),
+      lead_id: `LEAD-${Math.floor(100000 + Math.random() * 900000)}`,
+      status: 'NEW',
+      created_at: new Date().toISOString(),
+    });
+
+    // Visitors may insert but never read leads, so don't ask for the row back.
+    let newLead = makeLead();
+    let { error } = await supabase.from('leads').insert(newLead);
+    if (error?.code === '23505') {
+      // Random lead_id collided with an existing one — try once more with a fresh id
+      newLead = makeLead();
+      ({ error } = await supabase.from('leads').insert(newLead));
+    }
+    if (error) {
+      console.error('Lead insert failed:', error.message);
+      throw new Error(BACKEND_UNAVAILABLE);
+    }
+
+    if (this.currentAdmin) {
+      this.leads.unshift(newLead);
+      this.emit();
+    }
+    return newLead;
+  }
+
+  // --- Staff auth ---
+  getCurrentAdmin(): AdminUser | null {
+    return this.currentAdmin;
+  }
+
+  isAuthChecked(): boolean {
+    return this.authChecked;
+  }
+
+  private async restoreSession() {
+    if (!supabase) {
+      this.authChecked = true;
+      this.emit();
+      return;
+    }
+    const { data } = await supabase.auth.getSession();
+    if (data.session) await this.activateAdmin(data.session.user);
+    this.authChecked = true;
+    this.emit();
+
+    supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') this.clearAdminData();
+    });
+  }
+
+  /** Confirms the signed-in user is on the staff list, then loads staff-only data. */
+  private async activateAdmin(user: User): Promise<boolean> {
+    if (!supabase) return false;
+    const { data: staff } = await supabase.from('staff').select('*').eq('user_id', user.id).maybeSingle();
+    if (!staff) {
+      await supabase.auth.signOut();
+      return false;
+    }
+    this.currentAdmin = { id: user.id, email: staff.email, full_name: staff.full_name, role: staff.role };
+    // Reload public content too: staff can also see hidden services and unpublished work.
+    await Promise.all([this.loadAdminData(), this.loadPublicContent()]);
+    return true;
+  }
+
+  async loginAdmin(email: string, password: string): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    if (error || !data.user) {
+      const invalid = error?.message === 'Invalid login credentials';
+      return { success: false, message: invalid ? 'Invalid email or password.' : error?.message || 'Sign-in failed.' };
+    }
+
+    if (!(await this.activateAdmin(data.user))) {
+      return { success: false, message: 'This account does not have staff access.' };
+    }
+    this.logActivity('LOGIN', 'OPERATIONS_PORTAL', 'Signed in to the operations portal');
+    this.emit();
+    return { success: true };
+  }
+
+  async logoutAdmin() {
+    if (this.currentAdmin) this.logActivity('LOGOUT', 'OPERATIONS_PORTAL', 'Signed out');
+    await supabase?.auth.signOut();
+    this.clearAdminData();
+  }
+
+  async changeAdminPassword(newPassword: string): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+    if (newPassword.length < 8) return { success: false, message: 'Password must be at least 8 characters.' };
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return { success: false, message: error.message };
+    this.logActivity('SECURITY_UPDATE', 'OPERATIONS_PORTAL', 'Admin password changed');
+    return { success: true, message: 'Password updated successfully.' };
+  }
+
+  private clearAdminData() {
+    this.currentAdmin = null;
+    this.leads = [];
+    this.notes = [];
+    this.clients = [];
+    this.projects = [];
+    this.invoices = [];
+    this.activityLogs = [];
+    this.auditLogs = [];
+    this.emit();
+  }
+
+  private async loadAdminData() {
+    if (!supabase) return;
+    const [leads, notes, clients, projects, invoices, activity, audit] = await Promise.all([
+      supabase.from('leads').select('*').order('created_at', { ascending: false }),
+      supabase.from('lead_notes').select('*').order('created_at', { ascending: false }),
+      supabase.from('clients').select('*').order('created_at', { ascending: false }),
+      supabase.from('projects').select('*').order('created_at', { ascending: false }),
+      supabase.from('invoices').select('*').order('issue_date', { ascending: false }),
+      supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(200),
+      supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(200),
+    ]);
+    for (const res of [leads, notes, clients, projects, invoices, activity, audit]) {
+      if (res.error) console.error('Failed to load admin data:', res.error.message);
+    }
+    this.leads = (leads.data as Lead[]) || [];
+    this.notes = (notes.data as LeadNote[]) || [];
+    this.clients = (clients.data as Client[]) || [];
+    this.projects = (projects.data as Project[]) || [];
+    this.invoices = (invoices.data as Invoice[]) || [];
+    this.activityLogs = (activity.data as ActivityLog[]) || [];
+    this.auditLogs = (audit.data as AuditLog[]) || [];
+  }
+
+  private adminName() {
+    return this.currentAdmin?.full_name || 'Staff';
+  }
+
+  private async write(query: PromiseLike<{ error: { message: string } | null }>): Promise<Result> {
+    const { error } = await query;
+    if (error) {
+      console.error('Database write failed:', error.message);
+      return { success: false, message: error.message };
+    }
+    return { success: true };
+  }
+
+  // --- Settings & CMS ---
+  async updateSettings(newSettings: SiteSettings): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+    const res = await this.write(supabase.from('site_settings').upsert({ id: 1, data: newSettings }));
+    if (!res.success) return res;
+    this.settings = newSettings;
+    this.logAudit('UPDATE_SETTINGS', 'SITE_SETTINGS', '', 'Website settings updated');
+    this.emit();
+    return res;
+  }
+
+  async updateService(id: string, updates: Partial<ServiceItem>): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+    const res = await this.write(supabase.from('services').update(updates).eq('id', id));
+    if (!res.success) return res;
+    const service = this.services.find((s) => s.id === id);
+    if (service) {
+      Object.assign(service, updates);
+      this.logAudit('UPDATE_SERVICE', service.name, '', JSON.stringify(updates));
+    }
+    this.emit();
+    return res;
+  }
+
+  async addPortfolioItem(item: Omit<PortfolioItem, 'id'>): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+    const newItem: PortfolioItem = { ...item, id: `port-${Date.now()}` };
+    const res = await this.write(supabase.from('portfolio').insert(newItem));
+    if (!res.success) return res;
     this.portfolio.push(newItem);
-    this.save('dm_portfolio', this.portfolio);
-    this.logActivity(userName, 'CREATE_PORTFOLIO', newItem.title, 'Created new portfolio showcase');
-    return newItem;
+    this.logActivity('CREATE_PORTFOLIO', newItem.title, 'Added a portfolio item');
+    this.emit();
+    return res;
+  }
+
+  async deletePortfolioItem(id: string): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+    const res = await this.write(supabase.from('portfolio').delete().eq('id', id));
+    if (!res.success) return res;
+    const item = this.portfolio.find((p) => p.id === id);
+    this.portfolio = this.portfolio.filter((p) => p.id !== id);
+    if (item) this.logActivity('DELETE_PORTFOLIO', item.title, 'Removed a portfolio item');
+    this.emit();
+    return res;
   }
 
   // --- Leads & CRM ---
   getLeads(): Lead[] {
-    return [...this.leads].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return this.leads;
   }
 
   getLeadById(id: string): Lead | undefined {
-    return this.leads.find(l => l.id === id || l.lead_id === id);
+    return this.leads.find((l) => l.id === id || l.lead_id === id);
   }
 
-  async addLead(leadData: Omit<Lead, 'id' | 'lead_id' | 'status' | 'created_at'>): Promise<Lead> {
-    const randomDigits = Math.floor(100000 + Math.random() * 900000);
-    const leadId = `LEAD-${randomDigits}`;
-
-    const newLead: Lead = {
-      ...leadData,
-      id: `ld-${Date.now()}`,
-      lead_id: leadId,
-      status: 'NEW',
-      created_at: new Date().toISOString(),
-    };
-
-    this.leads.unshift(newLead);
-    this.save('dm_leads', this.leads);
-
-    this.logActivity('System', 'LEAD_CREATED', leadId, `New lead captured for ${newLead.service} from ${newLead.full_name}`);
-
-    // If Supabase is connected, async push
-    if (supabase) {
-      supabase.from('leads').insert([newLead]).then();
-    }
-
-    return newLead;
-  }
-
-  updateLeadStatus(id: string, newStatus: Lead['status'], userName = 'STAFF') {
-    const lead = this.leads.find(l => l.id === id || l.lead_id === id);
-    if (lead) {
-      const oldStatus = lead.status;
-      lead.status = newStatus;
-      lead.updated_at = new Date().toISOString();
-      this.save('dm_leads', this.leads);
-
-      this.logAudit(userName, 'STATUS_CHANGE', lead.lead_id, oldStatus, newStatus);
-      this.logActivity(userName, 'LEAD_STATUS_UPDATED', lead.lead_id, `Status transitioned from ${oldStatus} to ${newStatus}`);
-    }
-  }
-
-  addLeadNote(leadId: string, note: string, userName = 'Agent') {
-    const newNote: LeadNote = {
-      id: `note-${Date.now()}`,
-      lead_id: leadId,
-      user_name: userName,
-      note,
-      created_at: new Date().toISOString(),
-    };
-    this.notes.unshift(newNote);
-    this.save('dm_notes', this.notes);
-    this.logActivity(userName, 'NOTE_ADDED', leadId, `Internal note recorded`);
-    return newNote;
+  async updateLeadStatus(id: string, newStatus: Lead['status']): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+    const lead = this.getLeadById(id);
+    if (!lead) return { success: false, message: 'Lead not found.' };
+    const updated_at = new Date().toISOString();
+    const res = await this.write(supabase.from('leads').update({ status: newStatus, updated_at }).eq('id', lead.id));
+    if (!res.success) return res;
+    const oldStatus = lead.status;
+    lead.status = newStatus;
+    lead.updated_at = updated_at;
+    this.logAudit('STATUS_CHANGE', lead.lead_id, oldStatus, newStatus);
+    this.emit();
+    return res;
   }
 
   getNotesForLead(leadId: string): LeadNote[] {
-    return this.notes.filter(n => n.lead_id === leadId);
+    return this.notes.filter((n) => n.lead_id === leadId);
   }
 
-  // --- Convert Lead to Client ---
-  convertLeadToClient(leadId: string, userName = 'SALES'): Client | null {
-    const lead = this.leads.find(l => l.id === leadId || l.lead_id === leadId);
+  async addLeadNote(leadId: string, note: string): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
+    const newNote: LeadNote = {
+      id: crypto.randomUUID(),
+      lead_id: leadId,
+      user_name: this.adminName(),
+      note,
+      created_at: new Date().toISOString(),
+    };
+    const res = await this.write(supabase.from('lead_notes').insert(newNote));
+    if (!res.success) return res;
+    this.notes.unshift(newNote);
+    this.emit();
+    return res;
+  }
+
+  async convertLeadToClient(leadId: string): Promise<Client | null> {
+    if (!supabase) return null;
+    const lead = this.getLeadById(leadId);
     if (!lead) return null;
 
-    lead.status = 'WON';
-    this.save('dm_leads', this.leads);
-
     const client: Client = {
-      id: `cl-${Date.now()}`,
+      id: crypto.randomUUID(),
       name: lead.full_name,
       company: lead.business_name || lead.full_name,
       phone: lead.phone,
       email: lead.email,
       source_lead_id: lead.id,
       status: 'ACTIVE',
-      assigned_manager: userName,
+      assigned_manager: this.adminName(),
       notes: `Converted from lead ${lead.lead_id}. Interested in ${lead.service}.`,
       created_at: new Date().toISOString(),
     };
 
+    const res = await this.write(supabase.from('clients').insert(client));
+    if (!res.success) return null;
+    await this.updateLeadStatus(lead.id, 'WON');
     this.clients.unshift(client);
-    this.save('dm_clients', this.clients);
-
-    this.logActivity(userName, 'CLIENT_CONVERTED', client.name, `Successfully converted Lead ${lead.lead_id} into Client.`);
+    this.logActivity('CLIENT_CONVERTED', client.name, `Converted lead ${lead.lead_id} into a client`);
+    this.emit();
     return client;
   }
 
@@ -628,15 +392,20 @@ class StoreService {
     return this.projects;
   }
 
-  addProject(projectData: Omit<Project, 'id' | 'created_at'>): Project {
+  async addProject(projectData: Omit<Project, 'id' | 'created_at' | 'team_member'>): Promise<Result> {
+    if (!supabase) return { success: false, message: 'Backend is not configured.' };
     const newProject: Project = {
       ...projectData,
-      id: `proj-${Date.now()}`,
+      id: crypto.randomUUID(),
+      team_member: this.adminName(),
       created_at: new Date().toISOString(),
     };
+    const res = await this.write(supabase.from('projects').insert(newProject));
+    if (!res.success) return res;
     this.projects.unshift(newProject);
-    this.save('dm_projects', this.projects);
-    return newProject;
+    this.logActivity('CREATE_PROJECT', newProject.name, `Project created for ${newProject.client_name}`);
+    this.emit();
+    return res;
   }
 
   getInvoices(): Invoice[] {
@@ -645,30 +414,30 @@ class StoreService {
 
   // --- Activity & Audit Logs ---
   getActivityLogs(): ActivityLog[] {
-    return this.activityLogs.slice(0, 100);
+    return this.activityLogs;
   }
 
   getAuditLogs(): AuditLog[] {
-    return this.auditLogs.slice(0, 100);
+    return this.auditLogs;
   }
 
-  private logActivity(userName: string, action: string, entity: string, details: string) {
+  private logActivity(action: string, entity: string, details: string) {
     const log: ActivityLog = {
-      id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      user_name: userName,
+      id: crypto.randomUUID(),
+      user_name: this.adminName(),
       action,
       entity,
       details,
       created_at: new Date().toISOString(),
     };
     this.activityLogs.unshift(log);
-    this.save('dm_activity', this.activityLogs);
+    if (supabase) void this.write(supabase.from('activity_logs').insert(log));
   }
 
-  private logAudit(userName: string, action: string, entity: string, oldValue: string, newValue: string) {
+  private logAudit(action: string, entity: string, oldValue: string, newValue: string) {
     const log: AuditLog = {
-      id: `aud-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-      user_name: userName,
+      id: crypto.randomUUID(),
+      user_name: this.adminName(),
       action,
       entity,
       old_value: oldValue,
@@ -676,143 +445,31 @@ class StoreService {
       created_at: new Date().toISOString(),
     };
     this.auditLogs.unshift(log);
-    this.save('dm_audit', this.auditLogs);
+    if (supabase) void this.write(supabase.from('audit_logs').insert(log));
   }
 
-  // --- Auth & Security ---
-  getCurrentAdmin(): AdminUser | null {
-    return this.currentAdmin;
-  }
-
-  getStoredPassword(): string {
-    return localStorage.getItem('ivoxstack_admin_pass') || 'DigiGrowth@2026!';
-  }
-
-  getStoredEmail(): string {
-    return localStorage.getItem('ivoxstack_admin_email') || 'admin@ivoxstack.com';
-  }
-
-  changeAdminPassword(currentPass: string, newPass: string): { success: boolean; message?: string } {
-    const activePass = this.getStoredPassword();
-    if (currentPass !== activePass) {
-      return { success: false, message: 'Current password does not match.' };
-    }
-    if (!newPass || newPass.length < 6) {
-      return { success: false, message: 'New password must be at least 6 characters.' };
-    }
-    localStorage.setItem('ivoxstack_admin_pass', newPass);
-    this.logActivity(this.currentAdmin?.full_name || 'Super Admin', 'SECURITY_UPDATE', 'OPERATIONS_PORTAL', 'Admin password changed successfully');
-    return { success: true, message: 'Password updated successfully!' };
-  }
-
-  changeAdminEmail(newEmail: string): { success: boolean; message?: string } {
-    if (!newEmail || !newEmail.includes('@')) {
-      return { success: false, message: 'Please enter a valid email address.' };
-    }
-    localStorage.setItem('ivoxstack_admin_email', newEmail.trim().toLowerCase());
-    if (this.currentAdmin) {
-      this.currentAdmin.email = newEmail.trim().toLowerCase();
-      sessionStorage.setItem('dm_admin_user', JSON.stringify(this.currentAdmin));
-    }
-    this.logActivity(this.currentAdmin?.full_name || 'Super Admin', 'SECURITY_UPDATE', 'OPERATIONS_PORTAL', `Admin email updated to ${newEmail}`);
-    return { success: true, message: 'Admin email updated successfully!' };
-  }
-
-  loginAdmin(email: string, pass: string): { success: boolean; message?: string } {
-    const now = Date.now();
-    if (this.lockoutUntil && now < this.lockoutUntil) {
-      const waitMins = Math.ceil((this.lockoutUntil - now) / 60000);
-      return { success: false, message: `Account locked due to 5 failed attempts. Please retry in ${waitMins} minute(s).` };
-    }
-
-    const storedEmail = this.getStoredEmail();
-    const storedPass = this.getStoredPassword();
-    const validEmails = [storedEmail, 'admin@ivoxstack.com', 'admin@digimarketive.com', 'digimarketive@gmail.com'];
-
-    if (validEmails.includes(email.trim().toLowerCase()) && pass === storedPass) {
-      this.failedLoginAttempts = 0;
-      this.lockoutUntil = null;
-      this.currentAdmin = {
-        id: 'usr-admin-1',
-        email: email.trim().toLowerCase(),
-        full_name: 'Shubham Pandey (Super Admin)',
-        role: 'SUPER_ADMIN',
-      };
-      sessionStorage.setItem('dm_admin_user', JSON.stringify(this.currentAdmin));
-      this.logActivity('Shubham Pandey', 'LOGIN', 'OPERATIONS_PORTAL', 'Super Admin logged into Operations Dashboard');
-      return { success: true };
-    } else {
-      this.failedLoginAttempts += 1;
-      if (this.failedLoginAttempts >= 5) {
-        this.lockoutUntil = now + 15 * 60 * 1000; // 15 mins lockout
-        return { success: false, message: 'Too many incorrect attempts. Account locked for 15 minutes.' };
-      }
-      return { success: false, message: `Invalid credentials. (${5 - this.failedLoginAttempts} attempts remaining)` };
-    }
-  }
-
-  logoutAdmin() {
-    if (this.currentAdmin) {
-      this.logActivity(this.currentAdmin.full_name, 'LOGOUT', 'OPERATIONS_PORTAL', 'Logged out of admin session');
-    }
-    this.currentAdmin = null;
-    sessionStorage.removeItem('dm_admin_user');
-  }
-
-  // --- Backup & Restore ---
+  // --- Backup ---
   createBackupJSON(): string {
-    const backup = {
-      timestamp: new Date().toISOString(),
-      platform: 'IvoxStack',
-      version: '1.0.0',
-      tables: {
-        settings: this.settings,
-        services: this.services,
-        portfolio: this.portfolio,
-        leads: this.leads,
-        clients: this.clients,
-        projects: this.projects,
-        invoices: this.invoices,
-        notes: this.notes,
-        activityLogs: this.activityLogs,
-        auditLogs: this.auditLogs,
-      }
-    };
-    return JSON.stringify(backup, null, 2);
-  }
-
-  restoreBackupJSON(jsonString: string, userName = 'SUPER_ADMIN'): { success: boolean; message: string } {
-    try {
-      const parsed = JSON.parse(jsonString);
-      if (!parsed.tables) {
-        return { success: false, message: 'Invalid backup JSON. Missing tables property.' };
-      }
-
-      const t = parsed.tables;
-      if (t.settings) this.settings = t.settings;
-      if (t.services) this.services = t.services;
-      if (t.portfolio) this.portfolio = t.portfolio;
-      if (t.leads) this.leads = t.leads;
-      if (t.clients) this.clients = t.clients;
-      if (t.projects) this.projects = t.projects;
-      if (t.invoices) this.invoices = t.invoices;
-      if (t.notes) this.notes = t.notes;
-
-      this.save('dm_settings', this.settings);
-      this.save('dm_services', this.services);
-      this.save('dm_portfolio', this.portfolio);
-      this.save('dm_leads', this.leads);
-      this.save('dm_clients', this.clients);
-      this.save('dm_projects', this.projects);
-      this.save('dm_invoices', this.invoices);
-      this.save('dm_notes', this.notes);
-
-      this.logAudit(userName, 'RESTORE_DATABASE', 'ALL_TABLES', 'Previous State', `Restored from ${parsed.timestamp || 'file'}`);
-      this.logActivity(userName, 'RESTORE_COMPLETE', 'DATABASE', 'Full system restoration succeeded.');
-      return { success: true, message: 'Platform state restored successfully!' };
-    } catch (err: any) {
-      return { success: false, message: `Failed to restore: ${err.message}` };
-    }
+    return JSON.stringify(
+      {
+        timestamp: new Date().toISOString(),
+        platform: 'IvoxStack',
+        tables: {
+          settings: this.settings,
+          services: this.services,
+          portfolio: this.portfolio,
+          leads: this.leads,
+          lead_notes: this.notes,
+          clients: this.clients,
+          projects: this.projects,
+          invoices: this.invoices,
+          activity_logs: this.activityLogs,
+          audit_logs: this.auditLogs,
+        },
+      },
+      null,
+      2
+    );
   }
 }
 
